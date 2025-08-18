@@ -8,31 +8,48 @@ const router = express.Router();
 // Get subscription details
 router.get('/', requireRaddiwala, async (req, res) => {
   try {
-    const subscription = await Subscription.findOne({ 
+    console.log('Getting subscription details for raddiwala:', req.user._id);
+
+    const subscription = await Subscription.findOne({
       raddiwalaId: req.user._id,
-      isActive: true 
+      isActive: true
     }).sort({ createdAt: -1 });
 
+    console.log('Found subscription:', subscription ? 'Yes' : 'No');
+
     const raddiwala = await Raddiwala.findById(req.user._id);
+    if (!raddiwala) {
+      console.error('Raddiwala not found:', req.user._id);
+      return res.status(404).json({ message: 'Raddiwala not found' });
+    }
+
     await raddiwala.checkAndResetMonthlyCount();
+    console.log('Monthly pickups count:', raddiwala.monthlyPickupsCount);
 
     let subscriptionStatus = {
       hasActiveSubscription: false,
       subscription: null,
-      monthlyPickups: raddiwala.monthlyPickupsCount,
+      monthlyPickups: raddiwala.monthlyPickupsCount || 0,
       canPlaceBids: raddiwala.canPlaceBid(),
-      needsPremium: raddiwala.monthlyPickupsCount >= 50 && !raddiwala.isPremiumUser
+      needsPremium: (raddiwala.monthlyPickupsCount || 0) >= 50 && !raddiwala.isPremiumUser
     };
 
     if (subscription) {
       await subscription.checkAndExpire();
       subscriptionStatus.hasActiveSubscription = subscription.isValid();
       subscriptionStatus.subscription = subscription;
+      console.log('Active subscription found, expires:', subscription.expiryDate);
     }
 
+    console.log('Sending subscription status:', subscriptionStatus);
     res.json(subscriptionStatus);
   } catch (error) {
-    res.status(500).json({ message: 'Failed to fetch subscription details' });
+    console.error('Subscription details error:', error);
+    console.error('Error stack:', error.stack);
+    res.status(500).json({
+      message: 'Failed to fetch subscription details',
+      error: error.message
+    });
   }
 });
 

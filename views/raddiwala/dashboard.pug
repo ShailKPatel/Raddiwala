@@ -11,17 +11,16 @@ html(lang="en")
     // Navigation Bar
     nav.navbar
       .nav-container
-        .nav-logo
-          img(src="/logo.png", alt="RaddiWala Logo", onclick="window.location.href='/'")
-          span RaddiWala
+        .nav-logo(onclick="navigateToHome()") RaddiWala
         .nav-menu
+          a.nav-link.active(href="/raddiwala/dashboard") Dashboard
           a.nav-link(href="/raddiwala/ongoing-requests") Browse Requests
           a.nav-link(href="/raddiwala/pending-pickups") My Pickups
           a.nav-link(href="/raddiwala/completed-pickups") History
           a.nav-link(href="/raddiwala/subscription") Premium
           a.nav-link(href="/raddiwala/profile") Profile
-          .nav-user
-            a.nav-link(href="#", onclick="confirmLogout()") Logout
+        .nav-user
+          a.nav-link(href="#", onclick="confirmLogout()") Logout
 
     // Main Content
     main.dashboard-content
@@ -255,8 +254,8 @@ html(lang="en")
                   <span class="activity-date">${RaddiWala.formatDate(item.date)}</span>
                 </div>
                 <div class="activity-rating">
-                  ${item.data.raddiwalaRating.rating ? 
-                    `<div class="rating">${'★'.repeat(item.data.raddiwalaRating.rating)}${'☆'.repeat(5-item.data.raddiwalaRating.rating)}</div>` : 
+                  ${item.data.raddiwalaRating && item.data.raddiwalaRating.rating ?
+                    `<div class="rating">${'★'.repeat(item.data.raddiwalaRating.rating)}${'☆'.repeat(5-item.data.raddiwalaRating.rating)}</div>` :
                     '<span class="no-rating">Not rated</span>'
                   }
                 </div>

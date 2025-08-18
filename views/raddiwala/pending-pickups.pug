@@ -8,21 +8,145 @@ html(lang="en")
     link(rel="stylesheet", href="/css/dashboard.css")
     link(rel="stylesheet", href="/css/pickups.css")
     link(href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css", rel="stylesheet")
+    style.
+      /* Modal Styles */
+      .modal {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        justify-content: center;
+        align-items: center;
+      }
+
+      .modal-content {
+        background-color: white;
+        padding: 0;
+        border-radius: 8px;
+        width: 90%;
+        max-width: 500px;
+        max-height: 90vh;
+        overflow-y: auto;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+      }
+
+      .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 20px;
+        border-bottom: 1px solid #eee;
+      }
+
+      .modal-header h3 {
+        margin: 0;
+        color: #333;
+      }
+
+      .modal-close {
+        background: none;
+        border: none;
+        font-size: 24px;
+        cursor: pointer;
+        color: #666;
+        padding: 0;
+        width: 30px;
+        height: 30px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .modal-close:hover {
+        color: #333;
+      }
+
+      .pickup-summary {
+        padding: 20px;
+        background-color: #f8f9fa;
+        border-bottom: 1px solid #eee;
+      }
+
+      .pickup-summary h4 {
+        margin: 0 0 10px 0;
+        color: #333;
+      }
+
+      .pickup-summary p {
+        margin: 5px 0;
+        color: #666;
+      }
+
+      #completeForm {
+        padding: 20px;
+      }
+
+      .form-group {
+        margin-bottom: 15px;
+      }
+
+      .form-group label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: 500;
+        color: #333;
+      }
+
+      .form-group input {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 14px;
+      }
+
+      .form-group input:focus {
+        outline: none;
+        border-color: #007bff;
+        box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+      }
+
+      .modal-actions {
+        display: flex;
+        gap: 10px;
+        justify-content: flex-end;
+        margin-top: 20px;
+      }
+
+      .error-message {
+        color: #dc3545;
+        font-size: 14px;
+        margin-top: 5px;
+      }
+
+      .confirm-content {
+        padding: 20px;
+        text-align: center;
+      }
+
+      .confirm-content p {
+        margin: 0;
+        color: #333;
+        font-size: 16px;
+      }
   body
     // Navigation Bar
     nav.navbar
       .nav-container
-        .nav-logo
-          img(src="/logo.png", alt="RaddiWala Logo", onclick="window.location.href='/'")
-          span RaddiWala
+        .nav-logo(onclick="navigateToHome()") RaddiWala
         .nav-menu
+          a.nav-link(href="/raddiwala/dashboard") Dashboard
           a.nav-link(href="/raddiwala/ongoing-requests") Browse Requests
           a.nav-link.active(href="/raddiwala/pending-pickups") My Pickups
           a.nav-link(href="/raddiwala/completed-pickups") History
           a.nav-link(href="/raddiwala/subscription") Premium
           a.nav-link(href="/raddiwala/profile") Profile
-          .nav-user
-            a.nav-link(href="/logout") Logout
+        .nav-user
+          a.nav-link(href="#", onclick="confirmLogout()") Logout
 
     // Main Content
     main.dashboard-content
@@ -59,6 +183,20 @@ html(lang="en")
           .modal-actions
             button.btn.btn-secondary(type="button", onclick="hideCompleteModal()") Cancel
             button.btn.btn-primary(type="submit") Mark as Completed
+
+    // Confirmation Modal
+    .modal#confirmModal
+      .modal-content
+        .modal-header
+          h3 Confirm Action
+          button.modal-close(onclick="hideConfirmModal()") &times;
+
+        .confirm-content
+          p#confirmMessage
+
+        .modal-actions
+          button.btn.btn-secondary(onclick="hideConfirmModal()") Cancel
+          button.btn.btn-primary#confirmButton Confirm
 
     script(src="/js/main.js")
     script.
@@ -136,7 +274,7 @@ html(lang="en")
               </div>
               
               <div class="pickup-actions">
-                <button class="btn btn-primary" onclick="showCompleteModal('${pickup._id}')">
+                <button class="btn btn-primary" onclick="confirmCompletePickup('${pickup._id}')">
                   <i class="fas fa-check"></i> Mark as Completed
                 </button>
                 <a href="tel:${customer.phone}" class="btn btn-secondary">
@@ -271,5 +409,64 @@ html(lang="en")
         errorElements.forEach(el => el.textContent = '');
       }
 
+      // Confirmation modal functions
+      function showConfirmModal(message, onConfirm) {
+        document.getElementById('confirmMessage').textContent = message;
+        document.getElementById('confirmButton').onclick = () => {
+          hideConfirmModal();
+          onConfirm();
+        };
+        document.getElementById('confirmModal').style.display = 'flex';
+      }
+
+      function hideConfirmModal() {
+        document.getElementById('confirmModal').style.display = 'none';
+      }
+
+      // Confirm complete pickup
+      function confirmCompletePickup(bidId) {
+        showConfirmModal(
+          'Are you sure you want to mark this pickup as completed? This will open the completion form.',
+          () => {
+            showCompleteModal(bidId);
+          }
+        );
+      }
+
+      // Logout confirmation
+      function confirmLogout() {
+        showConfirmModal(
+          'Are you sure you want to logout?',
+          () => {
+            window.location.href = '/logout';
+          }
+        );
+      }
+
+      // Close modals when clicking outside
+      window.addEventListener('click', function(event) {
+        const confirmModal = document.getElementById('confirmModal');
+        const completeModal = document.getElementById('completeModal');
+
+        if (event.target === confirmModal) {
+          hideConfirmModal();
+        }
+        if (event.target === completeModal) {
+          hideCompleteModal();
+        }
+      });
+
       // Load data when page loads
-      document.addEventListener('DOMContentLoaded', loadPendingPickups);
+      document.addEventListener('DOMContentLoaded', function() {
+        // Ensure modals are hidden on page load
+        const completeModal = document.getElementById('completeModal');
+        const confirmModal = document.getElementById('confirmModal');
+        if (completeModal) {
+          completeModal.style.display = 'none';
+        }
+        if (confirmModal) {
+          confirmModal.style.display = 'none';
+        }
+
+        loadPendingPickups();
+      });

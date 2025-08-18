@@ -12,24 +12,23 @@ html(lang="en")
     // Navigation Bar
     nav.navbar
       .nav-container
-        .nav-logo
-          img(src="/logo.png", alt="RaddiWala Logo", onclick="window.location.href='/'")
-          span RaddiWala
+        .nav-logo(onclick="navigateToHome()") RaddiWala
         .nav-menu
+          a.nav-link(href="/raddiwala/dashboard") Dashboard
           a.nav-link.active(href="/raddiwala/ongoing-requests") Browse Requests
           a.nav-link(href="/raddiwala/pending-pickups") My Pickups
           a.nav-link(href="/raddiwala/completed-pickups") History
           a.nav-link(href="/raddiwala/subscription") Premium
           a.nav-link(href="/raddiwala/profile") Profile
-          .nav-user
-            a.nav-link(href="#", onclick="confirmLogout()") Logout
+        .nav-user
+          a.nav-link(href="#", onclick="confirmLogout()") Logout
 
     // Main Content
     main.dashboard-content
       .container
         .page-header
           h1 Ongoing Pickup Requests
-          p Browse and bid on pickup requests in your area
+          p Browse and bid on pickup requests in your city
 
         // Subscription Warning (if needed)
         .subscription-warning#subscriptionWarning(style="display: none;")
@@ -45,41 +44,18 @@ html(lang="en")
             i.fas.fa-spinner.fa-spin
             span Loading ongoing requests...
 
-    // Bid Modal
-    .modal#bidModal
-      .modal-content
-        .modal-header
-          h3 Place Your Bid
-          button.modal-close(onclick="hideBidModal()") &times;
-        
-        .request-summary#requestSummary
-          // Request details will be populated here
-        
-        form#bidForm
-          .form-group
-            label(for="pricePerKg") Price per KG (₹) *
-            input#pricePerKg(type="number", step="0.01", min="0", required, placeholder="Enter price per kg")
-            .error-message#priceError
+    // Image Modal
+    .image-modal#imageModal(style="display: none;")
+      .image-modal-content
+        .image-modal-close(onclick="hideImageModal()") &times;
+        img#modalImage(src="", alt="Scrap Image")
 
-          .form-group
-            label(for="pickupTime") Proposed Pickup Time *
-            input#pickupTime(type="text", required, placeholder="e.g., Tomorrow 10 AM, Evening 6-8 PM")
-            .error-message#pickupTimeError
 
-          .form-group
-            label(for="bidNotes") Additional Notes (Optional)
-            textarea#bidNotes(rows="3", placeholder="Any special instructions or notes...")
-
-          .estimated-amount
-            p Estimated Amount: 
-              span#estimatedAmount ₹0
-
-          .modal-actions
-            button.btn.btn-secondary(type="button", onclick="hideBidModal()") Cancel
-            button.btn.btn-primary(type="submit") Place Bid
 
     script(src="/js/main.js")
     script.
+      console.log('🚀 Ongoing Requests page loaded');
+
       let ongoingRequests = [];
       let currentRequest = null;
       let canPlaceBids = true;
@@ -88,6 +64,7 @@ html(lang="en")
       async function loadOngoingRequests() {
         try {
           console.log('Loading ongoing requests...');
+
           const [requests, subscriptionStatus] = await Promise.all([
             RaddiWala.apiCall('/raddiwalas/pickup-requests/ongoing'),
             RaddiWala.apiCall('/subscriptions')
@@ -108,82 +85,263 @@ html(lang="en")
         } catch (error) {
           console.error('Failed to load ongoing requests:', error);
           document.getElementById('requestsContainer').innerHTML =
-            \`<div class="error-message">
-              <i class="fas fa-exclamation-triangle"></i>
-              <p>Failed to load ongoing requests: \${error.message}</p>
-              <button class="btn btn-secondary" onclick="loadOngoingRequests()">Retry</button>
-            </div>\`;
+            '<div class="error-message">' +
+              '<i class="fas fa-exclamation-triangle"></i>' +
+              '<p>Failed to load ongoing requests: ' + error.message + '</p>' +
+              '<button class="btn btn-secondary" onclick="loadOngoingRequests()">Retry</button>' +
+            '</div>';
         }
       }
 
-      function showSubscriptionWarning() {
-        document.getElementById('subscriptionWarning').style.display = 'block';
-        showEmptyState('Monthly pickup limit exceeded. Please upgrade to premium to continue bidding.');
-      }
-
+      // Render ongoing requests with enhanced UI
       function renderOngoingRequests() {
+        console.log('Rendering', ongoingRequests.length, 'ongoing requests');
         const container = document.getElementById('requestsContainer');
-        
+
         if (ongoingRequests.length === 0) {
-          showEmptyState('No ongoing pickup requests found in your area');
+          showEmptyState('No ongoing pickup requests found in your city');
           return;
         }
 
-        const requestsHTML = ongoingRequests.map(request => {
-          const hasMyBid = request.hasMyBid;
-          
-          return `
-            <div class="pickup-card ${hasMyBid ? 'has-bid' : ''}">
-              <div class="pickup-header">
-                <div class="pickup-info">
-                  <h3>${Array.isArray(request.wasteType) ? request.wasteType.join(', ') : request.wasteType}</h3>
-                  <p class="pickup-weight">${request.weightCategory}</p>
-                  <p class="pickup-date">Posted: ${RaddiWala.formatDate(request.createdAt)}</p>
-                </div>
-                <div class="pickup-customer">
-                  <h4>${request.customerId.name}</h4>
-                  <div class="customer-rating">
-                    ${createStarRating(request.customerId.ratings.avgRating)}
-                    <span>(${request.customerId.ratings.totalRatings} reviews)</span>
-                  </div>
-                </div>
-              </div>
-              
-              <div class="pickup-details">
-                <div class="pickup-photos">
-                  ${request.photos.slice(0, 3).map(photo =>
-                    `<img src="${photo}" alt="Scrap photo" onclick="showImageModal('${photo}')">`
-                  ).join('')}
-                  ${request.photos.length > 3 ? `<div class="more-photos">+${request.photos.length - 3}</div>` : ''}
-                </div>
-                
-                <div class="pickup-description">
-                  <p><strong>Description:</strong> ${request.description || 'No description provided'}</p>
-                  <p><strong>Address:</strong> ${request.addressId.area}, ${request.addressId.city} - ${request.addressId.pincode}</p>
-                  ${request.timeWindow ? `<p><strong>Preferred Time:</strong> ${request.timeWindow}</p>` : ''}
-                </div>
-              </div>
-              
-              <div class="pickup-actions">
-                ${hasMyBid ? 
-                  '<div class="bid-placed"><i class="fas fa-check"></i> Bid Already Placed</div>' :
-                  canPlaceBids ? 
-                    `<button class="btn btn-primary" onclick="showBidModal('${request._id}')">Place Bid</button>` :
-                    '<button class="btn btn-secondary" disabled>Premium Required</button>'
-                }
-              </div>
-            </div>
-          `;
+        const requestsHTML = ongoingRequests.map((request, index) => {
+          console.log('Processing request', index + 1, ':', request);
+
+          const hasMyBid = request.hasMyBid || false;
+          const photos = request.photos || [];
+          const wasteTypes = Array.isArray(request.wasteType) ? request.wasteType : [request.wasteType];
+
+          return createRequestCard(request, hasMyBid, photos, wasteTypes);
         }).join('');
 
         container.innerHTML = requestsHTML;
+        console.log('Requests rendered successfully');
       }
 
+      // Create individual request card
+      function createRequestCard(request, hasMyBid, photos, wasteTypes) {
+        const requestId = request._id;
+        const customer = request.customerId || {};
+        const address = request.addressId || {};
+        const ratings = customer.ratings || { avgRating: 0, totalRatings: 0 };
+
+        return '<div class="pickup-card ' + (hasMyBid ? 'has-bid' : '') + '" data-request-id="' + requestId + '">' +
+          '<div class="pickup-header">' +
+            '<div class="pickup-info">' +
+              '<h3>' + wasteTypes.join(', ') + '</h3>' +
+              '<p class="pickup-weight">' + (request.weightCategory || 'Weight not specified') + '</p>' +
+              '<p class="pickup-date">Posted: ' + RaddiWala.formatDate(request.createdAt) + '</p>' +
+            '</div>' +
+            '<div class="pickup-customer">' +
+              '<h4>' + (customer.name || 'Unknown Customer') + '</h4>' +
+              '<div class="customer-rating">' +
+                createStarRating(ratings.avgRating) +
+                '<span>(' + ratings.totalRatings + ' reviews)</span>' +
+              '</div>' +
+            '</div>' +
+          '</div>' +
+
+          '<div class="pickup-details">' +
+            createPhotosSection(photos, requestId) +
+            '<div class="pickup-description">' +
+              '<p><strong>Description:</strong> ' + (request.description || 'No description provided') + '</p>' +
+              '<p><strong>Address:</strong> ' + (address.area || '') + ', ' + (address.city || '') +
+              (address.pincode ? ' - ' + address.pincode : '') + '</p>' +
+              (request.timeWindow ? '<p><strong>Preferred Time:</strong> ' + request.timeWindow + '</p>' : '') +
+            '</div>' +
+          '</div>' +
+
+          '<div class="request-dropdown" id="dropdown-' + requestId + '" style="display: none;">' +
+            createDropdownContent(request, hasMyBid) +
+          '</div>' +
+
+          '<div class="pickup-actions">' +
+            '<button class="btn btn-secondary view-more-btn" onclick="toggleDropdown(\'' + requestId + '\')">' +
+              '<i class="fas fa-chevron-down"></i> View More' +
+            '</button>' +
+            (hasMyBid ?
+              '<div class="bid-placed"><i class="fas fa-check"></i> Bid Already Placed</div>' : ''
+            ) +
+          '</div>' +
+        '</div>';
+      }
+
+      // Create photos section with dropdown functionality
+      function createPhotosSection(photos, requestId) {
+        if (!photos || photos.length === 0) {
+          return '<div class="pickup-photos"><div class="no-photos">No photos available</div></div>';
+        }
+
+        const visiblePhotos = photos.slice(0, 2);
+        const hiddenPhotos = photos.slice(2);
+
+        let photosHTML = '<div class="pickup-photos">';
+
+        // Show first 2 photos
+        visiblePhotos.forEach(photo => {
+          photosHTML += '<img src="' + photo + '" alt="Scrap photo" onclick="showImageModal(\'' + photo + '\')">';
+        });
+
+        // Show +X more button if there are hidden photos
+        if (hiddenPhotos.length > 0) {
+          photosHTML += '<div class="more-photos-btn" onclick="togglePhotos(\'' + requestId + '\')">' +
+            '<i class="fas fa-plus"></i> +' + hiddenPhotos.length + ' more' +
+          '</div>';
+        }
+
+        photosHTML += '</div>';
+        return photosHTML;
+      }
+
+      // Create dropdown content
+      function createDropdownContent(request, hasMyBid) {
+        const photos = request.photos || [];
+        const allPhotosHTML = photos.length > 2 ?
+          '<div class="all-photos" id="photos-' + request._id + '">' +
+            '<h5>All Photos (' + photos.length + '):</h5>' +
+            '<div class="photos-grid">' +
+              photos.map(photo =>
+                '<img src="' + photo + '" alt="Scrap photo" onclick="showImageModal(\'' + photo + '\')">'
+              ).join('') +
+            '</div>' +
+          '</div>' : '';
+
+        const bidSection = !hasMyBid && canPlaceBids ?
+          '<div class="bid-section">' +
+            '<h5>Place Your Bid:</h5>' +
+            '<div class="bid-form-inline">' +
+              '<input type="number" placeholder="Price per KG (₹)" id="quick-price-' + request._id + '" step="0.01" min="0">' +
+              '<input type="text" placeholder="Pickup time" id="quick-time-' + request._id + '">' +
+              '<button class="btn btn-primary btn-sm" onclick="quickBid(\'' + request._id + '\')">Place Bid</button>' +
+            '</div>' +
+          '</div>' :
+          (!hasMyBid && !canPlaceBids ?
+            '<div class="bid-section premium-required">' +
+              '<h5>Premium Required</h5>' +
+              '<p>Upgrade to premium to place bids on pickup requests.</p>' +
+              '<a href="/raddiwala/subscription" class="btn btn-primary btn-sm">Upgrade Now</a>' +
+            '</div>' : '');
+
+        return '<div class="dropdown-content">' +
+          allPhotosHTML +
+          '<div class="request-details-expanded">' +
+            '<h5>Additional Details:</h5>' +
+            '<p><strong>Full Description:</strong> ' + (request.description || 'No additional description') + '</p>' +
+            '<p><strong>Complete Address:</strong> ' +
+              (request.addressId?.streetAddress || '') + ', ' +
+              (request.addressId?.area || '') + ', ' +
+              (request.addressId?.city || '') + ' - ' +
+              (request.addressId?.pincode || '') + '</p>' +
+            (request.specialInstructions ? '<p><strong>Special Instructions:</strong> ' + request.specialInstructions + '</p>' : '') +
+          '</div>' +
+          bidSection +
+        '</div>';
+      }
+
+      // Toggle dropdown
+      function toggleDropdown(requestId) {
+        console.log('Toggling dropdown for request:', requestId);
+        const dropdown = document.getElementById('dropdown-' + requestId);
+        const button = document.querySelector('[data-request-id="' + requestId + '"] .view-more-btn');
+
+        if (dropdown.style.display === 'none') {
+          dropdown.style.display = 'block';
+          button.innerHTML = '<i class="fas fa-chevron-up"></i> View Less';
+        } else {
+          dropdown.style.display = 'none';
+          button.innerHTML = '<i class="fas fa-chevron-down"></i> View More';
+        }
+      }
+
+      // Quick bid functionality
+      function quickBid(requestId) {
+        console.log('Quick bid for request:', requestId);
+
+        const priceInput = document.getElementById('quick-price-' + requestId);
+        const timeInput = document.getElementById('quick-time-' + requestId);
+
+        const price = parseFloat(priceInput.value);
+        const time = timeInput.value.trim();
+
+        if (!price || price <= 0) {
+          RaddiWala.showNotification('Please enter a valid price per KG', 'error');
+          return;
+        }
+
+        if (!time) {
+          RaddiWala.showNotification('Please enter pickup time', 'error');
+          return;
+        }
+
+        const request = ongoingRequests.find(r => r._id === requestId);
+        if (!request) {
+          RaddiWala.showNotification('Request not found', 'error');
+          return;
+        }
+
+        submitBid(requestId, price, time, '');
+      }
+
+
+
+      // Submit bid (common function for both quick bid and modal bid)
+      async function submitBid(requestId, pricePerKg, pickupTime, notes) {
+        console.log('Submitting bid:', { requestId, pricePerKg, pickupTime, notes });
+
+        const request = ongoingRequests.find(r => r._id === requestId);
+        if (!request) {
+          RaddiWala.showNotification('Request not found', 'error');
+          return;
+        }
+
+        const wasteTypes = Array.isArray(request.wasteType) ? request.wasteType : [request.wasteType];
+
+        const formData = {
+          pickupRequestId: requestId,
+          itemRates: wasteTypes.map(wasteType => ({
+            wasteType: wasteType,
+            pricePerKg: pricePerKg
+          })),
+          proposedPickupTime: pickupTime,
+          notes: notes || ''
+        };
+
+        try {
+          await RaddiWala.apiCall('/bids', {
+            method: 'POST',
+            body: JSON.stringify(formData)
+          });
+
+          RaddiWala.showNotification('Bid placed successfully!', 'success');
+          loadOngoingRequests(); // Reload data
+
+        } catch (error) {
+          console.error('Bid submission failed:', error);
+          RaddiWala.showNotification(error.message || 'Failed to place bid', 'error');
+        }
+      }
+
+
+
+      // Image modal functions
+      function showImageModal(imageSrc) {
+        console.log('🖼️ Showing image modal:', imageSrc);
+        const modal = document.getElementById('imageModal');
+        const modalImage = document.getElementById('modalImage');
+
+        modalImage.src = imageSrc;
+        modal.style.display = 'flex';
+      }
+
+      function hideImageModal() {
+        document.getElementById('imageModal').style.display = 'none';
+      }
+
+      // Utility functions
       function createStarRating(rating) {
-        const fullStars = Math.floor(rating);
-        const hasHalfStar = rating % 1 >= 0.5;
+        const fullStars = Math.floor(rating || 0);
+        const hasHalfStar = (rating || 0) % 1 >= 0.5;
         let stars = '';
-        
+
         for (let i = 0; i < fullStars; i++) {
           stars += '★';
         }
@@ -193,144 +351,25 @@ html(lang="en")
         for (let i = fullStars + (hasHalfStar ? 1 : 0); i < 5; i++) {
           stars += '☆';
         }
-        
-        return `<span class="rating">${stars}</span>`;
+
+        return '<span class="rating">' + stars + '</span>';
       }
 
       function showEmptyState(message) {
         const container = document.getElementById('requestsContainer');
-        container.innerHTML = `
-          <div class="empty-state">
-            <i class="fas fa-search"></i>
-            <h3>${message}</h3>
-            <p>Check back later for new pickup requests in your area</p>
-          </div>
-        `;
-      }
-
-      // Show bid modal
-      function showBidModal(requestId) {
-        console.log('showBidModal called with requestId:', requestId);
-        console.log('canPlaceBids:', canPlaceBids);
-
-        if (!canPlaceBids) {
-          RaddiWala.showNotification('Please upgrade to premium to place more bids', 'warning');
-          return;
-        }
-
-        const request = ongoingRequests.find(r => r._id === requestId);
-        console.log('Found request:', request);
-        currentRequest = request;
-
-        const modal = document.getElementById('bidModal');
-        const summary = document.getElementById('requestSummary');
-
-        summary.innerHTML = \`
-          <div class="request-info">
-            <h4>\${Array.isArray(request.wasteType) ? request.wasteType.join(', ') : request.wasteType} - \${request.weightCategory}</h4>
-            <p><strong>Customer:</strong> \${request.customerId.name}</p>
-            <p><strong>Location:</strong> \${request.addressId.area}, \${request.addressId.city}</p>
-            \${request.timeWindow ? \`<p><strong>Preferred Time:</strong> \${request.timeWindow}</p>\` : ''}
-          </div>
-        \`;
-
-        // Reset form
-        document.getElementById('bidForm').reset();
-        document.getElementById('estimatedAmount').textContent = '₹0';
-        clearErrors();
-
-        modal.style.display = 'flex';
-      }
-
-      function hideBidModal() {
-        document.getElementById('bidModal').style.display = 'none';
-        currentRequest = null;
-      }
-
-      // Calculate estimated amount
-      document.getElementById('pricePerKg').addEventListener('input', function() {
-        const pricePerKg = parseFloat(this.value) || 0;
-        const weightCategory = currentRequest?.weightCategory || '';
-        
-        // Weight estimation mapping
-        const weightMap = {
-          "0–2 kg": 1,
-          "2–5 kg": 3.5,
-          "5–10 kg": 7.5,
-          "10–20 kg": 15,
-          "20–30 kg": 25,
-          "30–50 kg": 40,
-          "50+ kg": 60
-        };
-        
-        const estimatedWeight = weightMap[weightCategory] || 1;
-        const estimatedAmount = pricePerKg * estimatedWeight;
-        
-        document.getElementById('estimatedAmount').textContent = 
-          RaddiWala.formatCurrency(estimatedAmount);
-      });
-
-      // Bid form submission
-      document.getElementById('bidForm').addEventListener('submit', async function(e) {
-        e.preventDefault();
-        
-        const formData = {
-          pickupRequestId: currentRequest._id,
-          itemRates: [{
-            wasteType: currentRequest.wasteType,
-            pricePerKg: parseFloat(document.getElementById('pricePerKg').value)
-          }],
-          proposedPickupTime: document.getElementById('pickupTime').value,
-          notes: document.getElementById('bidNotes').value
-        };
-
-        const submitBtn = e.target.querySelector('button[type="submit"]');
-        
-        // Clear previous errors
-        clearErrors();
-        
-        // Validate form
-        if (!validateBidForm(formData)) {
-          return;
-        }
-
-        try {
-          RaddiWala.showLoading(submitBtn);
-          
-          await RaddiWala.apiCall('/bids', {
-            method: 'POST',
-            body: JSON.stringify(formData)
-          });
-          
-          RaddiWala.showNotification('Bid placed successfully!', 'success');
-          hideBidModal();
-          loadOngoingRequests(); // Reload data
-          
-        } catch (error) {
-          RaddiWala.showNotification(error.message, 'error');
-        } finally {
-          RaddiWala.hideLoading(submitBtn, 'Place Bid');
-        }
-      });
-
-      function validateBidForm(formData) {
-        let isValid = true;
-        
-        if (!formData.itemRates[0].pricePerKg || formData.itemRates[0].pricePerKg <= 0) {
-          showError('priceError', 'Please enter a valid price per kg');
-          isValid = false;
-        }
-        
-        if (!formData.proposedPickupTime.trim()) {
-          showError('pickupTimeError', 'Please enter proposed pickup time');
-          isValid = false;
-        }
-        
-        return isValid;
+        container.innerHTML =
+          '<div class="empty-state">' +
+            '<i class="fas fa-search"></i>' +
+            '<h3>' + message + '</h3>' +
+            '<p>Check back later for new pickup requests in your city</p>' +
+          '</div>';
       }
 
       function showError(elementId, message) {
-        document.getElementById(elementId).textContent = message;
+        const element = document.getElementById(elementId);
+        if (element) {
+          element.textContent = message;
+        }
       }
 
       function clearErrors() {
@@ -338,13 +377,23 @@ html(lang="en")
         errorElements.forEach(el => el.textContent = '');
       }
 
-      // Load data when page loads
-      document.addEventListener('DOMContentLoaded', loadOngoingRequests);
-
-
-
       function confirmLogout() {
         if (confirm('Are you sure you want to logout?')) {
           window.location.href = '/logout';
         }
       }
+
+      // Close modals when clicking outside
+      window.addEventListener('click', function(event) {
+        const imageModal = document.getElementById('imageModal');
+
+        if (event.target === imageModal) {
+          hideImageModal();
+        }
+      });
+
+      // Load data when page loads
+      document.addEventListener('DOMContentLoaded', function() {
+        console.log('🎯 DOM loaded, initializing ongoing requests page');
+        loadOngoingRequests();
+      });

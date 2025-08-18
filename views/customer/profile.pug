@@ -12,16 +12,15 @@ html(lang="en")
     // Navigation Bar
     nav.navbar
       .nav-container
-        .nav-logo
-          img(src="/logo.png", alt="RaddiWala Logo", onclick="window.location.href='/'")
-          span RaddiWala
+        .nav-logo(onclick="navigateToHome()") RaddiWala
         .nav-menu
+          a.nav-link(href="/customer/dashboard") Dashboard
           a.nav-link(href="/customer/sell-scrap") Sell Scrap
           a.nav-link(href="/customer/pending-pickups") My Requests
           a.nav-link(href="/customer/completed-pickups") History
           a.nav-link.active(href="/customer/profile") Profile
-          .nav-user
-            a.nav-link(href="/logout") Logout
+        .nav-user
+          a.nav-link(href="#", onclick="confirmLogout()") Logout
 
     // Main Content
     main.dashboard-content
@@ -543,6 +542,13 @@ html(lang="en")
       function clearErrors() {
         const errorElements = document.querySelectorAll('.error-message');
         errorElements.forEach(el => el.textContent = '');
+      }
+
+      // Logout confirmation
+      function confirmLogout() {
+        if (confirm('Are you sure you want to logout?')) {
+          window.location.href = '/logout';
+        }
       }
 
       // Load data when page loads

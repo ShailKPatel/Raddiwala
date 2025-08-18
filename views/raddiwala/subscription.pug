@@ -345,17 +345,16 @@ html(lang="en")
     // Navigation Bar
     nav.navbar
       .nav-container
-        .nav-logo
-          img(src="/logo.png", alt="RaddiWala Logo", onclick="window.location.href='/'")
-          span RaddiWala
+        .nav-logo(onclick="navigateToHome()") RaddiWala
         .nav-menu
+          a.nav-link(href="/raddiwala/dashboard") Dashboard
           a.nav-link(href="/raddiwala/ongoing-requests") Browse Requests
           a.nav-link(href="/raddiwala/pending-pickups") My Pickups
           a.nav-link(href="/raddiwala/completed-pickups") History
           a.nav-link.active(href="/raddiwala/subscription") Premium
           a.nav-link(href="/raddiwala/profile") Profile
         .nav-user
-          a.nav-link(href="/logout") Logout
+          a.nav-link(href="#", onclick="confirmLogout()") Logout
 
     // Main Content
     .dashboard-container
@@ -456,129 +455,188 @@ html(lang="en")
 
     script(src="/js/main.js")
     script.
-      let subscriptionData = null;
-      let selectedPaymentMethod = null;
+      // Execute immediately without waiting for DOM
+      console.log('🚀 Subscription page script starting...');
+      console.log('🔍 Window object:', window);
+      console.log('🔍 RaddiWala object:', window.RaddiWala);
 
-      // Load subscription status
-      async function loadSubscriptionStatus() {
-        try {
-          console.log('Loading subscription status...');
-          const response = await RaddiWala.apiCall('/subscriptions');
-          console.log('Subscription response:', response);
+      // Try to load subscription status immediately
+      setTimeout(function() {
+        console.log('⏰ Timeout executing...');
+        if (window.RaddiWala && window.RaddiWala.apiCall) {
+          console.log('✅ RaddiWala.apiCall found, calling API...');
+          loadSubscriptionStatusNow();
+        } else {
+          console.log('❌ RaddiWala.apiCall not found');
+          console.log('🔍 Available functions:', Object.keys(window.RaddiWala || {}));
+        }
+      }, 1000);
 
-          if (!response) {
-            throw new Error('No response received');
+      function loadSubscriptionStatusNow() {
+        console.log('🔄 Loading subscription status NOW...');
+        console.log('🌐 Making request to: /api/subscriptions');
+
+        // Update status to show loading
+        document.getElementById('subscriptionStatus').innerHTML =
+          '<div class="status-header">' +
+            '<i class="fas fa-spinner fa-spin"></i>' +
+            '<h2>Loading subscription status...</h2>' +
+          '</div>';
+
+        fetch('/api/subscriptions', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          credentials: 'include'
+        })
+        .then(response => {
+          console.log('📡 Raw response status:', response.status);
+          console.log('📡 Raw response headers:', response.headers);
+          console.log('📡 Raw response ok:', response.ok);
+
+          if (!response.ok) {
+            throw new Error('HTTP ' + response.status + ': ' + response.statusText);
+          }
+          return response.json();
+        })
+        .then(data => {
+          console.log('✅ Subscription data received:', data);
+          console.log('🔍 Data type:', typeof data);
+          console.log('🔍 Data keys:', Object.keys(data || {}));
+
+          if (!data) {
+            throw new Error('No data received from server');
           }
 
-          subscriptionData = response;
-          renderSubscriptionStatus();
-          updateUpgradeButton();
-        } catch (error) {
-          console.error('Failed to load subscription status:', error);
+          renderSubscriptionStatusNow(data);
+          updateUpgradeButtonNow(data);
+        })
+        .catch(error => {
+          console.error('❌ Subscription API error:', error);
+          console.error('❌ Error stack:', error.stack);
+
           document.getElementById('subscriptionStatus').innerHTML =
-            \`<div class="status-header">
-              <i class="fas fa-exclamation-triangle" style="color: #dc3545;"></i>
-              <div>
-                <h2>Failed to load subscription status</h2>
-                <p style="color: #666; margin: 10px 0;">\${error.message}</p>
-                <button class="upgrade-btn primary" onclick="loadSubscriptionStatus()">Retry</button>
-              </div>
-            </div>\`;
-        }
+            '<div class="status-header">' +
+              '<i class="fas fa-exclamation-triangle" style="color: #dc3545;"></i>' +
+              '<div>' +
+                '<h2>Failed to load subscription status</h2>' +
+                '<p style="color: #666; margin: 10px 0;">Error: ' + error.message + '</p>' +
+                '<button class="upgrade-btn primary" onclick="loadSubscriptionStatusNow()">Retry</button>' +
+              '</div>' +
+            '</div>';
+        });
       }
 
-      // Render subscription status
-      function renderSubscriptionStatus() {
+      function renderSubscriptionStatusNow(subscriptionData) {
+        console.log('🎨 Rendering subscription status with data:', subscriptionData);
+
         const statusContainer = document.getElementById('subscriptionStatus');
 
         if (!subscriptionData) {
+          console.error('❌ No subscription data provided to render function');
           statusContainer.innerHTML = '<p>No subscription data available</p>';
           return;
         }
 
-        const { hasActiveSubscription, subscription, monthlyPickups, canPlaceBids } = subscriptionData;
+        // Add null safety for all fields
+        const hasActiveSubscription = subscriptionData.hasActiveSubscription || false;
+        const subscription = subscriptionData.subscription || null;
+        const monthlyPickups = subscriptionData.monthlyPickups || 0;
+        const canPlaceBids = subscriptionData.canPlaceBids !== undefined ? subscriptionData.canPlaceBids : true;
+        const needsPremium = subscriptionData.needsPremium || false;
+
+        console.log('🔍 Parsed data:', { hasActiveSubscription, subscription, monthlyPickups, canPlaceBids, needsPremium });
 
         let statusHTML = '';
         let headerClass = hasActiveSubscription ? 'premium' : '';
         let icon = hasActiveSubscription ? 'fas fa-crown' : 'fas fa-user';
         let title = hasActiveSubscription ? 'Premium Active' : 'Free Plan Active';
 
-        statusHTML = \`
-          <div class="status-header \${headerClass}">
-            <i class="\${icon}"></i>
-            <h2>\${title}</h2>
-          </div>
-          <div class="status-details">
-        \`;
+        statusHTML =
+          '<div class="status-header ' + headerClass + '">' +
+            '<i class="' + icon + '"></i>' +
+            '<h2>' + title + '</h2>' +
+          '</div>' +
+          '<div class="status-details">';
 
-        if (hasActiveSubscription && subscription) {
+        if (hasActiveSubscription && subscription && subscription.expiryDate) {
           const expiryDate = new Date(subscription.expiryDate);
           const now = new Date();
-          const daysLeft = Math.ceil((expiryDate - now) / (1000 * 60 * 60 * 24));
+          const daysLeft = Math.max(0, Math.ceil((expiryDate - now) / (1000 * 60 * 60 * 24)));
 
-          statusHTML += \`
-            <div class="status-item">
-              <span class="status-label">Days Remaining</span>
-              <span class="status-value premium">\${daysLeft} days</span>
-            </div>
-            <div class="status-item">
-              <span class="status-label">Expires On</span>
-              <span class="status-value">\${expiryDate.toLocaleDateString()}</span>
-            </div>
-            <div class="status-item">
-              <span class="status-label">Monthly Pickups</span>
-              <span class="status-value premium">\${monthlyPickups} (Unlimited)</span>
-            </div>
-          \`;
+          statusHTML +=
+            '<div class="status-item">' +
+              '<span class="status-label">Days Remaining</span>' +
+              '<span class="status-value premium">' + daysLeft + ' days</span>' +
+            '</div>' +
+            '<div class="status-item">' +
+              '<span class="status-label">Expires On</span>' +
+              '<span class="status-value">' + expiryDate.toLocaleDateString() + '</span>' +
+            '</div>' +
+            '<div class="status-item">' +
+              '<span class="status-label">Monthly Pickups</span>' +
+              '<span class="status-value premium">' + monthlyPickups + ' (Unlimited)</span>' +
+            '</div>';
         } else {
           const remaining = Math.max(0, 50 - monthlyPickups);
-          statusHTML += \`
-            <div class="status-item">
-              <span class="status-label">Monthly Pickups</span>
-              <span class="status-value">\${monthlyPickups} / 50</span>
-            </div>
-            <div class="status-item">
-              <span class="status-label">Remaining</span>
-              <span class="status-value">\${remaining} pickups</span>
-            </div>
-            <div class="status-item">
-              <span class="status-label">Status</span>
-              <span class="status-value">\${canPlaceBids ? 'Active' : 'Limit Reached'}</span>
-            </div>
-          \`;
+          statusHTML +=
+            '<div class="status-item">' +
+              '<span class="status-label">Monthly Pickups</span>' +
+              '<span class="status-value">' + monthlyPickups + ' / 50</span>' +
+            '</div>' +
+            '<div class="status-item">' +
+              '<span class="status-label">Remaining</span>' +
+              '<span class="status-value">' + remaining + ' pickups</span>' +
+            '</div>' +
+            '<div class="status-item">' +
+              '<span class="status-label">Status</span>' +
+              '<span class="status-value">' + (canPlaceBids ? 'Active' : 'Limit Reached') + '</span>' +
+            '</div>';
 
-          if (!canPlaceBids) {
-            statusHTML += \`
-              <div class="warning-message">
-                <i class="fas fa-exclamation-triangle"></i>
-                <span>You have reached your monthly limit. Upgrade to premium for unlimited pickups.</span>
-              </div>
-            \`;
+          if (!canPlaceBids || needsPremium) {
+            statusHTML +=
+              '<div class="warning-message">' +
+                '<i class="fas fa-exclamation-triangle"></i>' +
+                '<span>You have reached your monthly limit. Upgrade to premium for unlimited pickups.</span>' +
+              '</div>';
           }
         }
 
         statusHTML += '</div>';
         statusContainer.innerHTML = statusHTML;
+        console.log('✅ Subscription status rendered successfully');
       }
 
-      // Update upgrade button
-      function updateUpgradeButton() {
+      function updateUpgradeButtonNow(subscriptionData) {
+        console.log('🔄 Updating upgrade button with data:', subscriptionData);
+
         const upgradeBtn = document.getElementById('upgradeBtn');
 
-        if (!subscriptionData) return;
+        if (!upgradeBtn) {
+          console.error('❌ Upgrade button not found in DOM');
+          return;
+        }
 
-        const { hasActiveSubscription } = subscriptionData;
+        if (!subscriptionData) {
+          console.error('❌ No subscription data provided to update button');
+          return;
+        }
+
+        const hasActiveSubscription = subscriptionData.hasActiveSubscription || false;
 
         if (hasActiveSubscription) {
           upgradeBtn.textContent = 'Extend Premium (+30 days)';
           upgradeBtn.className = 'upgrade-btn success';
+          console.log('✅ Button updated for premium user');
         } else {
           upgradeBtn.textContent = 'Upgrade to Premium';
           upgradeBtn.className = 'upgrade-btn primary';
+          console.log('✅ Button updated for free user');
         }
       }
 
-      // Show payment modal
+      // Modal functions
       function showPaymentModal() {
         document.getElementById('paymentModal').style.display = 'flex';
         selectedPaymentMethod = null;
@@ -590,12 +648,10 @@ html(lang="en")
         });
       }
 
-      // Hide payment modal
       function hidePaymentModal() {
         document.getElementById('paymentModal').style.display = 'none';
       }
 
-      // Select payment method
       function selectPayment(method) {
         selectedPaymentMethod = method;
 
@@ -605,56 +661,69 @@ html(lang="en")
         });
 
         // Select current option
-        document.querySelector(\`[data-method="\${method}"]\`).classList.add('selected');
+        document.querySelector('[data-method="' + method + '"]').classList.add('selected');
 
         // Enable purchase button
         document.getElementById('purchaseBtn').disabled = false;
       }
 
-      // Process purchase
-      async function processPurchase() {
+      function processPurchase() {
         if (!selectedPaymentMethod) {
-          RaddiWala.showNotification('Please select a payment method', 'error');
+          alert('Please select a payment method');
           return;
         }
 
         const purchaseBtn = document.getElementById('purchaseBtn');
 
-        try {
-          // Show loading
-          purchaseBtn.classList.add('loading');
-          purchaseBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
-          purchaseBtn.disabled = true;
+        // Show loading
+        purchaseBtn.classList.add('loading');
+        purchaseBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+        purchaseBtn.disabled = true;
 
-          // Make API call to purchase subscription
-          await RaddiWala.apiCall('/subscriptions/purchase', {
-            method: 'POST',
-            body: JSON.stringify({
-              paymentMethod: selectedPaymentMethod,
-              transactionId: 'DEMO_' + Date.now()
-            })
-          });
-
-          const message = subscriptionData.hasActiveSubscription ?
-            'Premium subscription extended by 30 days!' :
-            'Premium subscription activated successfully!';
-
-          RaddiWala.showNotification(message, 'success');
+        // Make API call to purchase subscription
+        fetch('/api/subscriptions/purchase', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          credentials: 'include',
+          body: JSON.stringify({
+            paymentMethod: selectedPaymentMethod,
+            transactionId: 'DEMO_' + Date.now()
+          })
+        })
+        .then(response => {
+          if (!response.ok) {
+            throw new Error('Purchase failed: ' + response.status);
+          }
+          return response.json();
+        })
+        .then(data => {
+          console.log('✅ Purchase successful:', data);
+          alert('Premium subscription activated successfully!');
           hidePaymentModal();
 
           // Reload subscription data
-          await loadSubscriptionStatus();
-
-        } catch (error) {
-          console.error('Purchase failed:', error);
-          RaddiWala.showNotification(error.message || 'Purchase failed. Please try again.', 'error');
-        } finally {
+          loadSubscriptionStatusNow();
+        })
+        .catch(error => {
+          console.error('❌ Purchase failed:', error);
+          alert('Purchase failed: ' + error.message);
+        })
+        .finally(() => {
           // Reset button
           purchaseBtn.classList.remove('loading');
           purchaseBtn.innerHTML = 'Purchase Premium (₹30)';
           purchaseBtn.disabled = false;
+        });
+      }
+
+      // Logout confirmation
+      function confirmLogout() {
+        if (confirm('Are you sure you want to logout?')) {
+          window.location.href = '/logout';
         }
       }
 
-      // Load data when page loads
-      document.addEventListener('DOMContentLoaded', loadSubscriptionStatus);
+      // Global variables
+      let selectedPaymentMethod = null;

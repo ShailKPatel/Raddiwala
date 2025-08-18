@@ -12,16 +12,15 @@ html(lang="en")
     // Navigation Bar
     nav.navbar
       .nav-container
-        .nav-logo
-          img(src="/logo.png", alt="RaddiWala Logo", onclick="window.location.href='/'")
-          span RaddiWala
+        .nav-logo(onclick="navigateToHome()") RaddiWala
         .nav-menu
+          a.nav-link(href="/customer/dashboard") Dashboard
           a.nav-link.active(href="/customer/sell-scrap") Sell Scrap
           a.nav-link(href="/customer/pending-pickups") My Requests
           a.nav-link(href="/customer/completed-pickups") History
           a.nav-link(href="/customer/profile") Profile
-          .nav-user
-            a.nav-link(href="#", onclick="confirmLogout()") Logout
+        .nav-user
+          a.nav-link(href="#", onclick="confirmLogout()") Logout
 
     // Main Content
     main.dashboard-content
@@ -41,7 +40,7 @@ html(lang="en")
                 span Hold Ctrl/Cmd to select multiple photos at once (Maximum 5 photos, 5MB each)
               
               .photo-upload-area
-                input#photos(type="file", name="photos", multiple, accept="image/*", onchange="handlePhotoUpload()")
+                input#photos(type="file", name="photos", multiple, accept="image/*")
                 .upload-placeholder#uploadPlaceholder
                   i.fas.fa-camera
                   p Click to upload photos or drag and drop
@@ -218,58 +217,104 @@ html(lang="en")
 
       // Handle photo upload
       function handlePhotoUpload() {
+        console.log('handlePhotoUpload called');
         const input = document.getElementById('photos');
         const files = Array.from(input.files);
-        
+        console.log('Files selected:', files.length);
+
+        // Prevent duplicate processing
+        if (files.length === 0) {
+          console.log('No files selected, skipping processing');
+          return;
+        }
+
         if (files.length > 5) {
           RaddiWala.showNotification('Maximum 5 photos allowed', 'error');
           input.value = '';
+          selectedPhotos = [];
+          renderPhotoPreview();
           return;
         }
-        
+
+        // Clear previous selections
         selectedPhotos = [];
-        const previewContainer = document.getElementById('photoPreview');
-        previewContainer.innerHTML = '';
-        
+
         files.forEach((file, index) => {
           try {
             RaddiWala.validateImageFile(file);
             selectedPhotos.push(file);
-            
-            const reader = new FileReader();
-            reader.onload = function(e) {
-              const photoDiv = document.createElement('div');
-              photoDiv.className = 'photo-item';
-              photoDiv.innerHTML = `
-                <img src="${e.target.result}" alt="Preview ${index + 1}">
-                <button type="button" class="remove-photo" onclick="removePhoto(${index})">
-                  <i class="fas fa-times"></i>
-                </button>
-              `;
-              previewContainer.appendChild(photoDiv);
-            };
-            reader.readAsDataURL(file);
+            console.log('Added photo', index + 1, ':', file.name);
           } catch (error) {
+            console.error('Invalid file:', file.name, error.message);
             RaddiWala.showNotification(error.message, 'error');
           }
         });
-        
+
+        console.log('Final selected photos:', selectedPhotos.length);
+        // Render preview
+        renderPhotoPreview();
+      }
+
+      // Separate function to render photo preview
+      function renderPhotoPreview() {
+        console.log('renderPhotoPreview called, photos:', selectedPhotos.length);
+        const previewContainer = document.getElementById('photoPreview');
+
+        // Clear existing previews completely
+        previewContainer.innerHTML = '';
+
+        if (selectedPhotos.length === 0) {
+          console.log('No photos to render');
+          const placeholder = document.getElementById('uploadPlaceholder');
+          placeholder.style.display = 'flex';
+          return;
+        }
+
+        selectedPhotos.forEach((file, index) => {
+          console.log('Rendering photo', index + 1, 'of', selectedPhotos.length, ':', file.name);
+          const reader = new FileReader();
+          reader.onload = function(e) {
+            // Double-check that the container still exists and is empty of this specific image
+            const existingImages = previewContainer.querySelectorAll('img[alt="Preview ' + (index + 1) + '"]');
+            if (existingImages.length > 0) {
+              console.log('Image', index + 1, 'already exists, skipping');
+              return;
+            }
+
+            const photoDiv = document.createElement('div');
+            photoDiv.className = 'photo-item';
+            photoDiv.setAttribute('data-index', index);
+            photoDiv.innerHTML =
+              '<img src="' + e.target.result + '" alt="Preview ' + (index + 1) + '">' +
+              '<button type="button" class="remove-photo" onclick="removePhoto(' + index + ')">' +
+                '<i class="fas fa-times"></i>' +
+              '</button>';
+            previewContainer.appendChild(photoDiv);
+            console.log('Photo', index + 1, 'rendered successfully');
+          };
+          reader.readAsDataURL(file);
+        });
+
         // Update placeholder visibility
         const placeholder = document.getElementById('uploadPlaceholder');
-        placeholder.style.display = selectedPhotos.length > 0 ? 'none' : 'flex';
+        placeholder.style.display = 'none';
       }
 
       function removePhoto(index) {
+        console.log('removePhoto called for index:', index);
+        console.log('Before removal - selectedPhotos:', selectedPhotos.length);
+
         selectedPhotos.splice(index, 1);
-        
-        // Update file input
+        console.log('After removal - selectedPhotos:', selectedPhotos.length);
+
+        // Update file input without triggering change event
         const input = document.getElementById('photos');
         const dt = new DataTransfer();
         selectedPhotos.forEach(file => dt.items.add(file));
         input.files = dt.files;
-        
-        // Re-render preview
-        handlePhotoUpload();
+
+        // Re-render preview directly without calling handlePhotoUpload
+        renderPhotoPreview();
       }
 
       // Form submission

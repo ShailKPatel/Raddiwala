@@ -18,12 +18,12 @@ const verifyToken = async (req, res, next) => {
 
     // Debug logging
     if (process.env.NODE_ENV === 'development') {
-      console.log('🔐 Auth Debug - Path:', req.path);
-      console.log('🔐 Auth Debug - Token exists:', !!token);
-      console.log('🔐 Auth Debug - All cookies:', req.cookies);
-      console.log('🔐 Auth Debug - Cookie header:', req.headers.cookie);
+      console.log('Auth Debug - Path:', req.path);
+      console.log('Auth Debug - Token exists:', !!token);
+      console.log('Auth Debug - All cookies:', req.cookies);
+      console.log('Auth Debug - Cookie header:', req.headers.cookie);
       if (token) {
-        console.log('🔐 Auth Debug - Token preview:', token.substring(0, 20) + '...');
+        console.log('Auth Debug - Token preview:', token.substring(0, 20) + '...');
       }
     }
 

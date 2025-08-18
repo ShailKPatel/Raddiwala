@@ -66,7 +66,7 @@ const { optionalAuth, requireCustomer, requireRaddiwala } = require('./middlewar
 
 // Add request logging
 app.use((req, res, next) => {
-  console.log(`📝 ${req.method} ${req.path}`);
+  console.log(`${req.method} ${req.path}`);
   next();
 });
 
@@ -107,7 +107,7 @@ app.get('/signup', optionalAuth, (req, res) => {
 // Customer routes
 
 app.get('/customer/dashboard', requireCustomer, (req, res) => {
-  console.log('📊 Customer dashboard accessed by:', req.user?.name);
+  console.log('Customer dashboard accessed by:', req.user?.name);
   res.render('customer/dashboard', { user: req.user });
 });
 
