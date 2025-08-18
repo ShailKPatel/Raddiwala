@@ -1,0 +1,290 @@
+Tech stack to use 
+Monoodb and monggose for db
+Use Express, react and node.
+It is built with React (Frontend), Node.js + Express (Backend), and MongoDB (Database).
+ 
+Its highly recomneed you use pug, nodemailer , chalk, vaidator, cookies,  RESTful APIs.
+Multer for handling photo uploads
+
+--------
+for both custmer and collectors make sure for login part only take email and otp(node mailer) email otp only.
+
+---------------------
+Project Specification – “RaddiWala”
+1. Overview
+
+RaddiWala is a digital platform that connects Customers (who want to sell scrap/raddi) with Raddiwalas (scrap collectors).
+The system streamlines waste selling through photo uploads, bidding, pickup scheduling, and rating-based trust building.
+
+2. Core Features (MVP)
+2.1 User Roles
+
+    Customer – posts scrap pickup requests.
+
+    Raddiwala – browses requests and submits bids.
+
+    whenu maek a login and sign up page make sure to ask he role
+
+2.2 Customer Workflow
+
+    Upload Photos of raddi.
+
+    Select Waste Type: Paper, Plastic, Metal, E-Waste, Others. ( make a realsitic list) 
+
+    Select Weight Category (e.g., 0–5kg, 5–10kg, 25–40kg).( make a realsitic list) 
+
+
+    Submit Pickup Request with:
+
+        Address (from saved list)
+
+        Optional time window to add new address.
+
+    View Bids from nearby Raddiwalas:
+
+        Price per kg
+
+        Pickup time
+
+        Ratings
+
+    Accept a Bid → request is locked.
+
+    Rate the Raddiwala after pickup.
+
+2.3 Raddiwala Workflow
+
+    Browse Pickup Requests (filtered by working radius).
+
+    Place Bid:
+
+        Price per kg for each waste type
+
+        Pickup time slot
+
+    Get Notification if accepted.
+
+    Complete Pickup and request rating.
+
+2.4 Bid System
+
+    Customers compare:
+
+        Price per kg
+
+        Time flexibility
+
+        Ratings
+	
+Customare gets to select the bid they like the best. a conformation window pops up they confirm then the database is updated and both the customer and raddi wala are updated via notification(nodemailer) and in app.
+
+    Once accepted → no other bids can be accepted for that request.
+
+2.5 Rating System
+
+    Both roles can rate each other (0–5 stars).
+
+    Average rating displayed on profiles.
+
+    Used to filter/search top-rated users.
+
+
+3. Monetization
+
+    Ad Revenue (Google Ads, direct partners)
+
+    Subscription for Raddiwalas:
+
+        ₹30/month if >50 accepted pickups
+	(soo if a raddiwala has more thatn or equal to  50 pickups a moth (a column named that) then they a given anotifation and shown on app they are nit allowed to maked bids if not a premium user[can be checked by colun in db])
+
+
+
+4. Relationships
+
+    Customer → PickupRequest → Wait for Bid →  Raddiwalas make bids → customer picks their faveoraite bid → bith are notified via app and nodemailer(email) 
+	→ once the transcation is completed they both are given option in app to rate each other.
+
+5. Final Schema Set
+Address:
+
+	auto generated id,line, area, city, pincode, landmark(optional)
+Note this address can either be used as custoemr addresss (home) or raddiwal's shop address
+
+Customer
+
+    phone, isPhoneVerified, isActive
+
+    name, email, profileImageUrl,
+    ratings (avgRating, totalStars, totalRatings),
+
+    addresses autogenrated id(max 3)
+
+Raddiwala
+
+    phone, isActive
+
+    name, email, profileImageUrl
+
+    shopAddress(addresses autogenrated id), isPremiumUser(linked iwh subsription
+
+    ratings (avgRating, totalStars, totalRatings), no of bdis accepted this month (resents to zeero on 1srt of every month) so every time a pickup is made by the raddiwalaincerese counter by 1.
+
+PickupRequest
+
+    customerId
+
+    photos array(max 5)
+
+    wasteType (enum)[
+  "Paper",
+  "Cardboard",
+  "Glass",
+  "Plastic Bottles & Containers",
+  "Plastic Bags & Wraps",
+  "Metal Cans",
+  "Other Metal Items",
+  "Wood",
+  "Textiles & Clothes",
+  "Shoes & Leather",
+  "Electronics",
+  "Batteries",
+  "Rubber",
+  "Building Materials",
+  "Organic Waste",
+other
+]
+
+
+
+    weightCategory[
+  "0–2 kg",
+  "2–5 kg",
+  "5–10 kg",
+  "10–20 kg",
+  "20–30 kg",
+  "30–50 kg",50+]
+
+    description(reccoment ssutomers to metion pick u times etc minium if tehy want to suggest etc)
+
+    addressId autogenrated id
+
+    timeWindow befroe the customerwhats to pick up to happen
+
+    isActive(false if bid id saccepted, account linked is dleted or user canceeled it)
+
+    status (open/accepted/completed/cancelled)
+
+    acceptedBidId(if not accepted not present)
+
+    statusTimestamps (acceptedAt, completedAt, cancelledAt)
+
+Bid
+
+    pickupRequestId
+
+    raddiwalaId
+
+    itemRates[] (waste type + pricePerKg)
+
+    proposedPickupTime
+
+    isAccepted
+
+CompletedTransaction
+
+    pickupRequestId, customerId, raddiwalaId
+
+    totalAmount
+
+    completedAt
+
+    customerRating, raddiwalaRating
+
+Subscription
+
+    raddiwalaId
+
+    startDate, expiryDate, pricePaid
+
+-------------------------------------
+Core Features (MVP)
+1. User Roles
+
+    Customer (People with Raddi)
+
+    Raddiwala (Scrap Collector)
+
+2. Customer Workflow
+
+    Upload photo(s) of raddi
+
+    Choose waste type: Paper, Plastic, Metal, E-Waste, etc.(metioned in db section exavt values)
+
+    Choose approximate weight category: 0–5kg, 5–10kg, 25–40kg, etc.(metioned in db section exavt values)
+
+    Submit pickup request with address and time window (optional)
+
+    View bids from nearby raddiwalas: price per kg & proposed pickup time
+
+    Accept one bid → lock it in
+
+    Rate raddiwala post pickup
+
+3. Raddiwala Workflow
+
+    Browse nearby pickup requests
+
+    Bid: Price per kg (per category) + Time slot for pickup
+
+    Get notified if their bid is accepted
+
+    Complete pickup and request a customer rating
+
+4. Bid System
+
+    Customers see all bids for their request and choose based on:
+
+        Price per kg
+
+        Time flexibility
+
+        Raddiwala ratings
+
+5. Ratings
+
+    Both parties rate each other
+
+    Average rating shown in profiles
+
+    Helps with trust, just like Uber/Ola
+-------------------------------------------------------
+
+Pages to make 
+Welome page: it is is the ladning  page it teell about aour buisness what we do how recycling is helping our planet etc. if u are nto logged it it wont show u nav bar, if u are loggen in u iwll se the navbar.
+	also has a login and  sign up button on the page
+
+login and sign up page: for both u will need to ask for email check its a valid email ten using node mailer give otp (rignt now say debug mode at bottoma nd show the otp we gave and if an error accour whle sending email at any 
+point in project just printin termianl ("Devloment mode otp is: ) 4 digit otp and at any point if u send otp show op at bottom saying devlipment mode.duting  sign up login if the emil is already in use say already in use
+it should detect if say some is signing in as customer but the email is already redister s as raddiwals say already in use. and vice versa.once otp is verifed if soign in pag sign in accorind ly sign in as the role(cusomer or raddwla)
+if sign up ask fro the role and igve sign upp form accoridng to that role.
+
+Nav bar all apges: once loggen in on top of all pages ther shoulbe this nav bar taht wil take u to otehrpages. for raddiwla and custoemr we will have diffrent nav bars
+Custoemrs: clciking on logo (logo.png) u will be bought to welocme page. Sell scarp wil bringu to sell scraps page itwill ask u for form metioned in db forweight scrap types etc and sumbits button. 
+view completd pickups shows completd piclups with that account and can rate raddwal here.
+view pending pickups apege, shows pending pickoups  with taht account and gives options to accept bid or cancel pickus( u cant cancel a pickup whsoe bid u accepted)
+profile page in whhc u updae emil (with otp veifction, name etc depte account option) address etc.
+
+Raddiwlaw: clciking on logo (logo.png)u will be bought to welocme page. view on going pickup requests page where u can see all ongoing pickup requets on your ciy (match cith of pcikup and (user's address) and address of raddiwals's
+address to check same city) in this page u can make e bids but if moethly pickups of raddiwalla has crossed 50 it will show u have exhausted free buy premium to access more.
+ View pednigns pickup page, all bids acceptd by the raddwiaa  but not completed, the raddwala can say its completed here abutton the raddiwala can view indforaton
+about pickds u here address etc. view completed pcikups showinfo here and can igve rating to cutomer here. suscription pags shows benfites of succtription shows price per oth and if already susbribed shows its duraon premium will last
+the raddiw ala can buy premuim now to add 30 more days to its premium. profile page in whhc u updae emil (with otp veifction, name etc depte account option) address etc.
+
+
+Debug page.
+
+this page lists all tables (collections) and its latest 5 entries for the database. it also list all the pages. and shoes did it connect correctly with mongodb etc debug page
+
+Note if a cutoemr tries to acces a raddiwala page it should show wrog credtia  and stuff etc and vice versa
+

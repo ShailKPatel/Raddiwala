@@ -1,0 +1,275 @@
+doctype html
+html(lang="en")
+  head
+    meta(charset="UTF-8")
+    meta(name="viewport", content="width=device-width, initial-scale=1.0")
+    title Pending Pickups - RaddiWala
+    link(rel="stylesheet", href="/css/style.css")
+    link(rel="stylesheet", href="/css/dashboard.css")
+    link(rel="stylesheet", href="/css/pickups.css")
+    link(href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css", rel="stylesheet")
+  body
+    // Navigation Bar
+    nav.navbar
+      .nav-container
+        .nav-logo
+          img(src="/logo.png", alt="RaddiWala Logo", onclick="window.location.href='/'")
+          span RaddiWala
+        .nav-menu
+          a.nav-link(href="/raddiwala/ongoing-requests") Browse Requests
+          a.nav-link.active(href="/raddiwala/pending-pickups") My Pickups
+          a.nav-link(href="/raddiwala/completed-pickups") History
+          a.nav-link(href="/raddiwala/subscription") Premium
+          a.nav-link(href="/raddiwala/profile") Profile
+          .nav-user
+            a.nav-link(href="/logout") Logout
+
+    // Main Content
+    main.dashboard-content
+      .container
+        .page-header
+          h1 Pending Pickups
+          p Manage your accepted bids and complete pickups
+
+        .pickups-container#pickupsContainer
+          .loading-spinner
+            i.fas.fa-spinner.fa-spin
+            span Loading pending pickups...
+
+    // Complete Pickup Modal
+    .modal#completeModal
+      .modal-content
+        .modal-header
+          h3 Complete Pickup
+          button.modal-close(onclick="hideCompleteModal()") &times;
+        
+        .pickup-summary#pickupSummary
+          // Pickup details will be populated here
+        
+        form#completeForm
+          .form-group
+            label(for="actualWeight") Actual Weight (kg)
+            input#actualWeight(type="number", step="0.1", min="0", placeholder="Enter actual weight collected")
+
+          .form-group
+            label(for="finalAmount") Final Amount (₹) *
+            input#finalAmount(type="number", step="0.01", min="0", required, placeholder="Enter final amount")
+            .error-message#amountError
+
+          .modal-actions
+            button.btn.btn-secondary(type="button", onclick="hideCompleteModal()") Cancel
+            button.btn.btn-primary(type="submit") Mark as Completed
+
+    script(src="/js/main.js")
+    script.
+      let pendingPickups = [];
+      let currentPickup = null;
+
+      // Load pending pickups
+      async function loadPendingPickups() {
+        try {
+          const response = await RaddiWala.apiCall('/raddiwalas/pickups/pending');
+          pendingPickups = response;
+          renderPendingPickups();
+        } catch (error) {
+          console.error('Failed to load pending pickups:', error);
+          RaddiWala.showNotification('Failed to load pending pickups', 'error');
+          showEmptyState('Failed to load pending pickups');
+        }
+      }
+
+      function renderPendingPickups() {
+        const container = document.getElementById('pickupsContainer');
+        
+        if (pendingPickups.length === 0) {
+          showEmptyState('No pending pickups found');
+          return;
+        }
+
+        const pickupsHTML = pendingPickups.map(pickup => {
+          const request = pickup.pickupRequestId;
+          const customer = request.customerId;
+          
+          return `
+            <div class="pickup-card pending">
+              <div class="pickup-header">
+                <div class="pickup-info">
+                  <h3>${request.wasteType}</h3>
+                  <p class="pickup-weight">${request.weightCategory}</p>
+                  <p class="pickup-date">Accepted: ${RaddiWala.formatDate(pickup.createdAt)}</p>
+                </div>
+                <div class="pickup-status status-accepted">
+                  Accepted
+                </div>
+              </div>
+              
+              <div class="pickup-details">
+                <div class="pickup-photos">
+                  ${request.photos.slice(0, 3).map(photo => 
+                    `<img src="${photo}" alt="Scrap photo" onclick="showImageModal('${photo}')">`
+                  ).join('')}
+                  ${request.photos.length > 3 ? `<div class="more-photos">+${request.photos.length - 3}</div>` : ''}
+                </div>
+                
+                <div class="pickup-description">
+                  <p><strong>Customer:</strong> ${customer.name}</p>
+                  <div class="customer-rating">
+                    ${createStarRating(customer.ratings.avgRating)}
+                    <span>(${customer.ratings.totalRatings} reviews)</span>
+                  </div>
+                  <p><strong>Phone:</strong> ${customer.phone}</p>
+                  <p><strong>Address:</strong> ${request.addressId.line}, ${request.addressId.area}, ${request.addressId.city} - ${request.addressId.pincode}</p>
+                  ${request.addressId.landmark ? `<p><strong>Landmark:</strong> ${request.addressId.landmark}</p>` : ''}
+                  ${request.timeWindow ? `<p><strong>Preferred Time:</strong> ${request.timeWindow}</p>` : ''}
+                  ${request.description ? `<p><strong>Description:</strong> ${request.description}</p>` : ''}
+                </div>
+              </div>
+              
+              <div class="bid-details-section">
+                <h4>Your Bid Details</h4>
+                <div class="bid-info">
+                  <p><strong>Price per kg:</strong> ₹${pickup.itemRates[0]?.pricePerKg || 0}</p>
+                  <p><strong>Proposed Pickup Time:</strong> ${pickup.proposedPickupTime}</p>
+                  <p><strong>Estimated Amount:</strong> ${RaddiWala.formatCurrency(pickup.totalEstimatedAmount)}</p>
+                  ${pickup.notes ? `<p><strong>Notes:</strong> ${pickup.notes}</p>` : ''}
+                </div>
+              </div>
+              
+              <div class="pickup-actions">
+                <button class="btn btn-primary" onclick="showCompleteModal('${pickup._id}')">
+                  <i class="fas fa-check"></i> Mark as Completed
+                </button>
+                <a href="tel:${customer.phone}" class="btn btn-secondary">
+                  <i class="fas fa-phone"></i> Call Customer
+                </a>
+              </div>
+            </div>
+          `;
+        }).join('');
+
+        container.innerHTML = pickupsHTML;
+      }
+
+      function createStarRating(rating) {
+        const fullStars = Math.floor(rating);
+        const hasHalfStar = rating % 1 >= 0.5;
+        let stars = '';
+        
+        for (let i = 0; i < fullStars; i++) {
+          stars += '★';
+        }
+        if (hasHalfStar) {
+          stars += '☆';
+        }
+        for (let i = fullStars + (hasHalfStar ? 1 : 0); i < 5; i++) {
+          stars += '☆';
+        }
+        
+        return `<span class="rating">${stars}</span>`;
+      }
+
+      function showEmptyState(message) {
+        const container = document.getElementById('pickupsContainer');
+        container.innerHTML = `
+          <div class="empty-state">
+            <i class="fas fa-clock"></i>
+            <h3>${message}</h3>
+            <p>Accepted bids will appear here for you to complete</p>
+            <a href="/raddiwala/ongoing-requests" class="btn btn-primary">Browse Ongoing Requests</a>
+          </div>
+        `;
+      }
+
+      // Show complete pickup modal
+      function showCompleteModal(bidId) {
+        const pickup = pendingPickups.find(p => p._id === bidId);
+        currentPickup = pickup;
+        
+        const modal = document.getElementById('completeModal');
+        const summary = document.getElementById('pickupSummary');
+        
+        const request = pickup.pickupRequestId;
+        const customer = request.customerId;
+        
+        summary.innerHTML = `
+          <div class="pickup-info">
+            <h4>${request.wasteType} - ${request.weightCategory}</h4>
+            <p><strong>Customer:</strong> ${customer.name}</p>
+            <p><strong>Your Bid:</strong> ₹${pickup.itemRates[0]?.pricePerKg || 0}/kg</p>
+            <p><strong>Estimated Amount:</strong> ${RaddiWala.formatCurrency(pickup.totalEstimatedAmount)}</p>
+          </div>
+        `;
+        
+        // Pre-fill final amount with estimated amount
+        document.getElementById('finalAmount').value = pickup.totalEstimatedAmount;
+        document.getElementById('actualWeight').value = '';
+        clearErrors();
+        
+        modal.style.display = 'flex';
+      }
+
+      function hideCompleteModal() {
+        document.getElementById('completeModal').style.display = 'none';
+        currentPickup = null;
+      }
+
+      // Complete pickup form submission
+      document.getElementById('completeForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const formData = {
+          actualWeight: parseFloat(document.getElementById('actualWeight').value) || null,
+          totalAmount: parseFloat(document.getElementById('finalAmount').value)
+        };
+
+        const submitBtn = e.target.querySelector('button[type="submit"]');
+        
+        // Clear previous errors
+        clearErrors();
+        
+        // Validate form
+        if (!validateCompleteForm(formData)) {
+          return;
+        }
+
+        try {
+          RaddiWala.showLoading(submitBtn);
+          
+          await RaddiWala.apiCall(`/bids/${currentPickup._id}/complete`, {
+            method: 'POST',
+            body: JSON.stringify(formData)
+          });
+          
+          RaddiWala.showNotification('Pickup marked as completed successfully!', 'success');
+          hideCompleteModal();
+          loadPendingPickups(); // Reload data
+          
+        } catch (error) {
+          RaddiWala.showNotification(error.message, 'error');
+        } finally {
+          RaddiWala.hideLoading(submitBtn, 'Mark as Completed');
+        }
+      });
+
+      function validateCompleteForm(formData) {
+        let isValid = true;
+        
+        if (!formData.totalAmount || formData.totalAmount <= 0) {
+          showError('amountError', 'Please enter a valid final amount');
+          isValid = false;
+        }
+        
+        return isValid;
+      }
+
+      function showError(elementId, message) {
+        document.getElementById(elementId).textContent = message;
+      }
+
+      function clearErrors() {
+        const errorElements = document.querySelectorAll('.error-message');
+        errorElements.forEach(el => el.textContent = '');
+      }
+
+      // Load data when page loads
+      document.addEventListener('DOMContentLoaded', loadPendingPickups);

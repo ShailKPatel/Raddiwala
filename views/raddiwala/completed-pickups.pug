@@ -1,0 +1,321 @@
+doctype html
+html(lang="en")
+  head
+    meta(charset="UTF-8")
+    meta(name="viewport", content="width=device-width, initial-scale=1.0")
+    title Completed Pickups - RaddiWala
+    link(rel="stylesheet", href="/css/style.css")
+    link(rel="stylesheet", href="/css/dashboard.css")
+    link(rel="stylesheet", href="/css/pickups.css")
+    link(href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css", rel="stylesheet")
+  body
+    // Navigation Bar
+    nav.navbar
+      .nav-container
+        .nav-logo
+          img(src="/logo.png", alt="RaddiWala Logo", onclick="window.location.href='/'")
+          span RaddiWala
+        .nav-menu
+          a.nav-link(href="/raddiwala/ongoing-requests") Browse Requests
+          a.nav-link(href="/raddiwala/pending-pickups") My Pickups
+          a.nav-link.active(href="/raddiwala/completed-pickups") History
+          a.nav-link(href="/raddiwala/subscription") Premium
+          a.nav-link(href="/raddiwala/profile") Profile
+          .nav-user
+            a.nav-link(href="/logout") Logout
+
+    // Main Content
+    main.dashboard-content
+      .container
+        .page-header
+          h1 Completed Pickups
+          p Review your completed transactions and rate customers
+
+        .pickups-container#pickupsContainer
+          .loading-spinner
+            i.fas.fa-spinner.fa-spin
+            span Loading completed pickups...
+
+    // Rating Modal
+    .modal#ratingModal
+      .modal-content
+        .modal-header
+          h3 Rate Customer
+          button.modal-close(onclick="hideRatingModal()") &times;
+        
+        .transaction-summary#transactionSummary
+          // Transaction details will be populated here
+        
+        form#ratingForm
+          .form-group
+            label Rating *
+            .star-rating-input#starRating
+              span.star(data-rating="1") ☆
+              span.star(data-rating="2") ☆
+              span.star(data-rating="3") ☆
+              span.star(data-rating="4") ☆
+              span.star(data-rating="5") ☆
+            input#ratingValue(type="hidden", required)
+            .error-message#ratingError
+
+          .form-group
+            label(for="review") Review (Optional)
+            textarea#review(rows="4", placeholder="Share your experience with this customer...")
+
+          .modal-actions
+            button.btn.btn-secondary(type="button", onclick="hideRatingModal()") Cancel
+            button.btn.btn-primary(type="submit") Submit Rating
+
+    script(src="/js/main.js")
+    script.
+      let completedTransactions = [];
+      let currentTransaction = null;
+      let selectedRating = 0;
+
+      // Load completed transactions
+      async function loadCompletedTransactions() {
+        try {
+          const response = await RaddiWala.apiCall('/raddiwalas/completed-transactions');
+          completedTransactions = response;
+          renderCompletedTransactions();
+        } catch (error) {
+          console.error('Failed to load completed transactions:', error);
+          RaddiWala.showNotification('Failed to load completed transactions', 'error');
+          showEmptyState('Failed to load completed transactions');
+        }
+      }
+
+      function renderCompletedTransactions() {
+        const container = document.getElementById('pickupsContainer');
+        
+        if (completedTransactions.length === 0) {
+          showEmptyState('No completed pickups found');
+          return;
+        }
+
+        const transactionsHTML = completedTransactions.map(transaction => {
+          const request = transaction.pickupRequestId;
+          const customer = transaction.customerId;
+          const hasRated = transaction.raddiwalaRating.rating;
+          
+          return `
+            <div class="pickup-card completed">
+              <div class="pickup-header">
+                <div class="pickup-info">
+                  <h3>${request.wasteType}</h3>
+                  <p class="pickup-weight">${request.weightCategory}</p>
+                  <p class="pickup-date">Completed: ${RaddiWala.formatDate(transaction.completedAt)}</p>
+                </div>
+                <div class="pickup-status status-completed">
+                  Completed
+                </div>
+              </div>
+              
+              <div class="pickup-details">
+                <div class="pickup-photos">
+                  ${request.photos.slice(0, 3).map(photo => 
+                    `<img src="${photo}" alt="Scrap photo" onclick="showImageModal('${photo}')">`
+                  ).join('')}
+                  ${request.photos.length > 3 ? `<div class="more-photos">+${request.photos.length - 3}</div>` : ''}
+                </div>
+                
+                <div class="pickup-description">
+                  <p><strong>Customer:</strong> ${customer.name}</p>
+                  <div class="customer-rating">
+                    ${createStarRating(customer.ratings.avgRating)}
+                    <span>(${customer.ratings.totalRatings} reviews)</span>
+                  </div>
+                  <p><strong>Address:</strong> ${request.addressId.area}, ${request.addressId.city}</p>
+                  ${transaction.actualWeight ? `<p><strong>Actual Weight:</strong> ${transaction.actualWeight} kg</p>` : ''}
+                </div>
+              </div>
+              
+              <div class="transaction-details">
+                <h4>Transaction Details</h4>
+                <div class="transaction-info">
+                  <p><strong>Final Amount:</strong> ${RaddiWala.formatCurrency(transaction.totalAmount)}</p>
+                  <p><strong>Payment Status:</strong> 
+                    <span class="payment-status status-${transaction.paymentStatus}">${transaction.paymentStatus.charAt(0).toUpperCase() + transaction.paymentStatus.slice(1)}</span>
+                  </p>
+                </div>
+              </div>
+              
+              <div class="rating-section">
+                <div class="customer-rating-given">
+                  <h5>Customer's Rating for You:</h5>
+                  ${transaction.customerRating.rating ? 
+                    `<div class="rating-display">
+                      ${createStarRating(transaction.customerRating.rating)}
+                      ${transaction.customerRating.review ? `<p class="review-text">"${transaction.customerRating.review}"</p>` : ''}
+                    </div>` :
+                    '<p class="no-rating">Customer hasn\'t rated yet</p>'
+                  }
+                </div>
+                
+                <div class="your-rating">
+                  <h5>Your Rating for Customer:</h5>
+                  ${hasRated ? 
+                    `<div class="rating-display">
+                      ${createStarRating(transaction.raddiwalaRating.rating)}
+                      ${transaction.raddiwalaRating.review ? `<p class="review-text">"${transaction.raddiwalaRating.review}"</p>` : ''}
+                    </div>` :
+                    `<button class="btn btn-primary btn-sm" onclick="showRatingModal('${transaction._id}')">
+                      <i class="fas fa-star"></i> Rate Customer
+                    </button>`
+                  }
+                </div>
+              </div>
+            </div>
+          `;
+        }).join('');
+
+        container.innerHTML = transactionsHTML;
+      }
+
+      function createStarRating(rating) {
+        const fullStars = Math.floor(rating);
+        const hasHalfStar = rating % 1 >= 0.5;
+        let stars = '';
+        
+        for (let i = 0; i < fullStars; i++) {
+          stars += '★';
+        }
+        if (hasHalfStar) {
+          stars += '☆';
+        }
+        for (let i = fullStars + (hasHalfStar ? 1 : 0); i < 5; i++) {
+          stars += '☆';
+        }
+        
+        return `<span class="rating">${stars}</span>`;
+      }
+
+      function showEmptyState(message) {
+        const container = document.getElementById('pickupsContainer');
+        container.innerHTML = `
+          <div class="empty-state">
+            <i class="fas fa-history"></i>
+            <h3>${message}</h3>
+            <p>Completed transactions will appear here</p>
+            <a href="/raddiwala/ongoing-requests" class="btn btn-primary">Browse Ongoing Requests</a>
+          </div>
+        `;
+      }
+
+      // Show rating modal
+      function showRatingModal(transactionId) {
+        const transaction = completedTransactions.find(t => t._id === transactionId);
+        currentTransaction = transaction;
+        
+        const modal = document.getElementById('ratingModal');
+        const summary = document.getElementById('transactionSummary');
+        
+        const request = transaction.pickupRequestId;
+        const customer = transaction.customerId;
+        
+        summary.innerHTML = `
+          <div class="transaction-info">
+            <h4>${request.wasteType} - ${request.weightCategory}</h4>
+            <p><strong>Customer:</strong> ${customer.name}</p>
+            <p><strong>Amount:</strong> ${RaddiWala.formatCurrency(transaction.totalAmount)}</p>
+            <p><strong>Completed:</strong> ${RaddiWala.formatDate(transaction.completedAt)}</p>
+          </div>
+        `;
+        
+        // Reset form
+        selectedRating = 0;
+        updateStarDisplay();
+        document.getElementById('review').value = '';
+        document.getElementById('ratingValue').value = '';
+        clearErrors();
+        
+        modal.style.display = 'flex';
+      }
+
+      function hideRatingModal() {
+        document.getElementById('ratingModal').style.display = 'none';
+        currentTransaction = null;
+      }
+
+      // Star rating interaction
+      document.getElementById('starRating').addEventListener('click', function(e) {
+        if (e.target.classList.contains('star')) {
+          selectedRating = parseInt(e.target.dataset.rating);
+          document.getElementById('ratingValue').value = selectedRating;
+          updateStarDisplay();
+        }
+      });
+
+      function updateStarDisplay() {
+        const stars = document.querySelectorAll('#starRating .star');
+        stars.forEach((star, index) => {
+          if (index < selectedRating) {
+            star.textContent = '★';
+            star.classList.add('selected');
+          } else {
+            star.textContent = '☆';
+            star.classList.remove('selected');
+          }
+        });
+      }
+
+      // Rating form submission
+      document.getElementById('ratingForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const formData = {
+          rating: selectedRating,
+          review: document.getElementById('review').value.trim()
+        };
+
+        const submitBtn = e.target.querySelector('button[type="submit"]');
+        
+        // Clear previous errors
+        clearErrors();
+        
+        // Validate form
+        if (!validateRatingForm(formData)) {
+          return;
+        }
+
+        try {
+          RaddiWala.showLoading(submitBtn);
+          
+          await RaddiWala.apiCall(`/transactions/${currentTransaction._id}/raddiwala-rating`, {
+            method: 'POST',
+            body: JSON.stringify(formData)
+          });
+          
+          RaddiWala.showNotification('Rating submitted successfully!', 'success');
+          hideRatingModal();
+          loadCompletedTransactions(); // Reload data
+          
+        } catch (error) {
+          RaddiWala.showNotification(error.message, 'error');
+        } finally {
+          RaddiWala.hideLoading(submitBtn, 'Submit Rating');
+        }
+      });
+
+      function validateRatingForm(formData) {
+        let isValid = true;
+        
+        if (!formData.rating || formData.rating < 1 || formData.rating > 5) {
+          showError('ratingError', 'Please select a rating');
+          isValid = false;
+        }
+        
+        return isValid;
+      }
+
+      function showError(elementId, message) {
+        document.getElementById(elementId).textContent = message;
+      }
+
+      function clearErrors() {
+        const errorElements = document.querySelectorAll('.error-message');
+        errorElements.forEach(el => el.textContent = '');
+      }
+
+      // Load data when page loads
+      document.addEventListener('DOMContentLoaded', loadCompletedTransactions);

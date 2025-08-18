@@ -1,0 +1,214 @@
+doctype html
+html(lang="en")
+  head
+    meta(charset="UTF-8")
+    meta(name="viewport", content="width=device-width, initial-scale=1.0")
+    title Customer Dashboard - RaddiWala
+    link(rel="stylesheet", href="/css/style.css")
+    link(rel="stylesheet", href="/css/dashboard.css")
+    link(href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css", rel="stylesheet")
+  body
+    // Navigation Bar
+    nav.navbar
+      .nav-container
+        .nav-logo
+          img(src="/logo.png", alt="RaddiWala Logo", onclick="window.location.href='/'")
+          span RaddiWala
+        .nav-menu
+          a.nav-link(href="/customer/sell-scrap") Sell Scrap
+          a.nav-link(href="/customer/pending-pickups") My Requests
+          a.nav-link(href="/customer/completed-pickups") History
+          a.nav-link(href="/customer/profile") Profile
+          .nav-user
+            a.nav-link(href="#", onclick="confirmLogout()") Logout
+
+    // Main Content
+    main.dashboard-content
+      .container
+        .dashboard-header
+          h1 Customer Dashboard
+          p Welcome back, #{user.name}! Ready to sell some scrap?
+
+        // Quick Stats
+        .stats-grid
+          .stat-card
+            .stat-icon
+              i.fas.fa-upload
+            .stat-info
+              h3#totalRequests 0
+              p Total Requests
+          .stat-card
+            .stat-icon
+              i.fas.fa-clock
+            .stat-info
+              h3#pendingRequests 0
+              p Pending Requests
+          .stat-card
+            .stat-icon
+              i.fas.fa-check-circle
+            .stat-info
+              h3#completedRequests 0
+              p Completed Requests
+          .stat-card
+            .stat-icon
+              i.fas.fa-rupee-sign
+            .stat-info
+              h3#totalEarnings ₹0
+              p Total Earnings
+
+        // Quick Actions
+        .quick-actions
+          h2 Quick Actions
+          .action-grid
+            .action-card(onclick="window.location.href='/customer/sell-scrap'")
+              .action-icon
+                i.fas.fa-camera
+              h3 Sell Scrap
+              p Upload photos and create a new pickup request
+
+            .action-card(onclick="window.location.href='/customer/pending-pickups'")
+              .action-icon
+                i.fas.fa-clock
+              h3 View Pending Pickups
+              p Check and manage your pending pickup requests
+
+            .action-card(onclick="window.location.href='/customer/completed-pickups'")
+              .action-icon
+                i.fas.fa-history
+              h3 View Completed Pickups
+              p Review your completed transactions and rate raddiwalas
+
+            .action-card(onclick="window.location.href='/customer/profile'")
+              .action-icon
+                i.fas.fa-user
+              h3 Manage Profile
+              p Update your profile and manage addresses
+
+        // Recent Activity
+        .recent-activity
+          h2 Recent Activity
+          .activity-container#recentActivity
+            .loading-spinner
+              i.fas.fa-spinner.fa-spin
+              span Loading recent activity...
+
+    script(src="/js/main.js")
+    script.
+      function confirmLogout() {
+        if (confirm('Are you sure you want to logout?')) {
+          window.location.href = '/logout';
+        }
+      }
+    script.
+      // Load dashboard data
+      async function loadDashboardData() {
+        try {
+          // Load stats
+          const [requests, transactions] = await Promise.all([
+            RaddiWala.apiCall('/customers/pickup-requests'),
+            RaddiWala.apiCall('/customers/completed-transactions')
+          ]);
+
+          // Update stats
+          document.getElementById('totalRequests').textContent = requests.length;
+          document.getElementById('pendingRequests').textContent = 
+            requests.filter(r => r.status === 'open' || r.status === 'accepted').length;
+          document.getElementById('completedRequests').textContent = 
+            requests.filter(r => r.status === 'completed').length;
+          
+          const totalEarnings = transactions.reduce((sum, t) => sum + t.totalAmount, 0);
+          document.getElementById('totalEarnings').textContent = 
+            RaddiWala.formatCurrency(totalEarnings);
+
+          // Load recent activity
+          loadRecentActivity(requests, transactions);
+
+        } catch (error) {
+          console.error('Failed to load dashboard data:', error);
+          RaddiWala.showNotification('Failed to load dashboard data', 'error');
+        }
+      }
+
+      function loadRecentActivity(requests, transactions) {
+        const activityContainer = document.getElementById('recentActivity');
+        
+        // Combine and sort recent items
+        const recentItems = [];
+        
+        // Add recent requests
+        requests.slice(0, 3).forEach(request => {
+          recentItems.push({
+            type: 'request',
+            date: new Date(request.createdAt),
+            data: request
+          });
+        });
+
+        // Add recent transactions
+        transactions.slice(0, 3).forEach(transaction => {
+          recentItems.push({
+            type: 'transaction',
+            date: new Date(transaction.completedAt),
+            data: transaction
+          });
+        });
+
+        // Sort by date
+        recentItems.sort((a, b) => b.date - a.date);
+
+        if (recentItems.length === 0) {
+          activityContainer.innerHTML = `
+            <div class="no-activity">
+              <i class="fas fa-info-circle"></i>
+              <p>No recent activity. Start by creating your first pickup request!</p>
+              <a href="/customer/sell-scrap" class="btn btn-primary">Sell Scrap Now</a>
+            </div>
+          `;
+          return;
+        }
+
+        // Render recent items
+        const activityHTML = recentItems.slice(0, 5).map(item => {
+          if (item.type === 'request') {
+            return `
+              <div class="activity-item">
+                <div class="activity-icon request">
+                  <i class="fas fa-upload"></i>
+                </div>
+                <div class="activity-content">
+                  <h4>Pickup Request Created</h4>
+                  <p>${item.data.wasteType} - ${item.data.weightCategory}</p>
+                  <span class="activity-date">${RaddiWala.formatDate(item.date)}</span>
+                </div>
+                <div class="activity-status status-${item.data.status}">
+                  ${item.data.status.charAt(0).toUpperCase() + item.data.status.slice(1)}
+                </div>
+              </div>
+            `;
+          } else {
+            return `
+              <div class="activity-item">
+                <div class="activity-icon transaction">
+                  <i class="fas fa-check-circle"></i>
+                </div>
+                <div class="activity-content">
+                  <h4>Transaction Completed</h4>
+                  <p>Amount: ${RaddiWala.formatCurrency(item.data.totalAmount)}</p>
+                  <span class="activity-date">${RaddiWala.formatDate(item.date)}</span>
+                </div>
+                <div class="activity-rating">
+                  ${item.data.customerRating.rating ? 
+                    `<div class="rating">${'★'.repeat(item.data.customerRating.rating)}${'☆'.repeat(5-item.data.customerRating.rating)}</div>` : 
+                    '<span class="no-rating">Not rated</span>'
+                  }
+                </div>
+              </div>
+            `;
+          }
+        }).join('');
+
+        activityContainer.innerHTML = activityHTML;
+      }
+
+      // Load data when page loads
+      document.addEventListener('DOMContentLoaded', loadDashboardData);

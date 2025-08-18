@@ -1,0 +1,549 @@
+doctype html
+html(lang="en")
+  head
+    meta(charset="UTF-8")
+    meta(name="viewport", content="width=device-width, initial-scale=1.0")
+    title Profile - RaddiWala
+    link(rel="stylesheet", href="/css/style.css")
+    link(rel="stylesheet", href="/css/dashboard.css")
+    link(rel="stylesheet", href="/css/forms.css")
+    link(href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css", rel="stylesheet")
+  body
+    // Navigation Bar
+    nav.navbar
+      .nav-container
+        .nav-logo
+          img(src="/logo.png", alt="RaddiWala Logo", onclick="window.location.href='/'")
+          span RaddiWala
+        .nav-menu
+          a.nav-link(href="/customer/sell-scrap") Sell Scrap
+          a.nav-link(href="/customer/pending-pickups") My Requests
+          a.nav-link(href="/customer/completed-pickups") History
+          a.nav-link.active(href="/customer/profile") Profile
+          .nav-user
+            a.nav-link(href="/logout") Logout
+
+    // Main Content
+    main.dashboard-content
+      .container
+        .page-header
+          h1 Profile Management
+          p Update your profile information and manage addresses
+
+        .profile-container
+          // Profile Overview
+          .profile-overview
+            .profile-card
+              .profile-header
+                .profile-avatar
+                  img#profileImage(src="/images/default-avatar.svg", alt="Profile Picture", style="display: none;")
+                  i#profileIcon.fas.fa-user-circle
+                  .avatar-upload
+                    input#profilePictureInput(type="file", accept="image/*", style="display: none;")
+                    button.btn.btn-sm.btn-secondary(onclick="document.getElementById('profilePictureInput').click()")
+                      i.fas.fa-camera
+                      span Change Photo
+                .profile-info
+                  h2#profileName Loading...
+                  p#profileEmail Loading...
+                  .profile-rating
+                    span#profileRating
+                    span#profileReviews
+              
+              .profile-stats
+                .stat-item
+                  span.stat-value#totalRequests 0
+                  span.stat-label Total Requests
+                .stat-item
+                  span.stat-value#completedRequests 0
+                  span.stat-label Completed
+                .stat-item
+                  span.stat-value#totalEarnings ₹0
+                  span.stat-label Total Earnings
+
+          // Profile Forms
+          .profile-forms
+            // Basic Information
+            .form-section
+              h3 Basic Information
+              form#profileForm
+                .form-row
+                  .form-group
+                    label(for="name") Full Name *
+                    input#name(type="text", required)
+                    .error-message#nameError
+
+                  .form-group
+                    label(for="phone") Phone Number *
+                    input#phone(type="tel", required)
+                    .error-message#phoneError
+
+                .form-actions
+                  button.btn.btn-primary(type="submit") Update Profile
+
+            // Address Management
+            .form-section
+              h3 Address Management</h3>
+              .addresses-list#addressesList
+                .loading-spinner
+                  i.fas.fa-spinner.fa-spin
+                  span Loading addresses...
+              
+              .address-actions
+                button.btn.btn-primary(onclick="showAddAddressModal()") Add New Address
+
+            // Email Change
+            .form-section
+              h3 Change Email</h3>
+              form#emailForm
+                .form-group
+                  label(for="newEmail") New Email Address *
+                  input#newEmail(type="email", required)
+                  .error-message#newEmailError
+
+                .form-group#otpGroup(style="display: none;")
+                  label(for="emailOtp") Enter OTP *
+                  input#emailOtp(type="text", maxlength="4")
+                  .error-message#emailOtpError
+                  
+                  .development-mode#emailDevMode(style="display: none;")
+                    p.dev-notice Development Mode - OTP: 
+                      span#emailDevOTP
+
+                .form-actions
+                  button.btn.btn-primary#emailSubmitBtn(type="submit") Send OTP
+
+            // Danger Zone
+            .form-section.danger-zone
+              h3 Danger Zone</h3>
+              .danger-content
+                .danger-item
+                  .danger-info
+                    h4 Delete Account
+                    p This action cannot be undone. All your data will be permanently deleted.
+                  button.btn.btn-danger(onclick="showDeleteConfirmation()") Delete Account
+
+    // Add Address Modal
+    .modal#addAddressModal
+      .modal-content
+        .modal-header
+          h3 Add New Address
+          button.modal-close(onclick="hideAddAddressModal()") &times;
+        
+        form#addAddressForm
+          .form-group
+            label(for="newAddressLine") Address Line *
+            input#newAddressLine(type="text", required, placeholder="House/Shop number, Street name")
+          
+          .form-group
+            label(for="newAddressArea") Area *
+            input#newAddressArea(type="text", required, placeholder="Area/Locality")
+          
+          .form-row
+            .form-group
+              label(for="newAddressCity") City *
+              input#newAddressCity(type="text", required, placeholder="City")
+            
+            .form-group
+              label(for="newAddressPincode") Pincode *
+              input#newAddressPincode(type="text", required, maxlength="6", placeholder="6-digit pincode")
+          
+          .form-group
+            label(for="newAddressLandmark") Landmark
+            input#newAddressLandmark(type="text", placeholder="Nearby landmark")
+          
+          .modal-actions
+            button.btn.btn-secondary(type="button", onclick="hideAddAddressModal()") Cancel
+            button.btn.btn-primary(type="submit") Add Address
+
+    // Edit Address Modal
+    .modal#editAddressModal
+      .modal-content
+        .modal-header
+          h3 Edit Address
+          button.modal-close(onclick="hideEditAddressModal()") &times;
+        
+        form#editAddressForm
+          input#editAddressId(type="hidden")
+          
+          .form-group
+            label(for="editAddressLine") Address Line *
+            input#editAddressLine(type="text", required)
+          
+          .form-group
+            label(for="editAddressArea") Area *
+            input#editAddressArea(type="text", required)
+          
+          .form-row
+            .form-group
+              label(for="editAddressCity") City *
+              input#editAddressCity(type="text", required)
+            
+            .form-group
+              label(for="editAddressPincode") Pincode *
+              input#editAddressPincode(type="text", required, maxlength="6")
+          
+          .form-group
+            label(for="editAddressLandmark") Landmark
+            input#editAddressLandmark(type="text")
+          
+          .modal-actions
+            button.btn.btn-secondary(type="button", onclick="hideEditAddressModal()") Cancel
+            button.btn.btn-primary(type="submit") Update Address
+
+    // Delete Confirmation Modal
+    .modal#deleteModal
+      .modal-content
+        .modal-header
+          h3 Delete Account
+          button.modal-close(onclick="hideDeleteModal()") &times;
+        
+        .delete-warning
+          .warning-icon
+            i.fas.fa-exclamation-triangle
+          .warning-text
+            h4 Are you absolutely sure?
+            p This action <strong>cannot be undone</strong>. This will permanently delete your account and remove all your data from our servers.
+            p Type <strong>DELETE</strong> to confirm:
+            input#deleteConfirmation(type="text", placeholder="Type DELETE to confirm")
+        
+        .modal-actions
+          button.btn.btn-secondary(onclick="hideDeleteModal()") Cancel
+          button.btn.btn-danger#deleteConfirmBtn(onclick="confirmDelete()" disabled) Delete Account
+
+    script(src="/js/main.js")
+    script.
+      let profileData = null;
+      let userAddresses = [];
+      let emailOtpSent = false;
+      let currentEditAddress = null;
+
+      // Load profile data
+      async function loadProfileData() {
+        try {
+          const [profile, transactions] = await Promise.all([
+            RaddiWala.apiCall('/customers/profile'),
+            RaddiWala.apiCall('/customers/completed-transactions')
+          ]);
+
+          profileData = profile;
+          userAddresses = profile.addresses || [];
+          populateProfileData(profile, transactions);
+          renderAddresses();
+        } catch (error) {
+          console.error('Failed to load profile data:', error);
+          RaddiWala.showNotification('Failed to load profile data', 'error');
+        }
+      }
+
+      function populateProfileData(profile, transactions) {
+        // Profile overview
+        document.getElementById('profileName').textContent = profile.name;
+        document.getElementById('profileEmail').textContent = profile.email;
+
+        // Profile picture
+        const profileImage = document.getElementById('profileImage');
+        const profileIcon = document.getElementById('profileIcon');
+
+        if (profile.profilePicture) {
+          profileImage.src = profile.profilePicture;
+          profileImage.style.display = 'block';
+          profileIcon.style.display = 'none';
+        } else {
+          profileImage.style.display = 'none';
+          profileIcon.style.display = 'block';
+        }
+        
+        const ratingElement = document.getElementById('profileRating');
+        const reviewsElement = document.getElementById('profileReviews');
+        
+        if (profile.ratings.totalRatings > 0) {
+          ratingElement.innerHTML = createStarRating(profile.ratings.avgRating);
+          reviewsElement.textContent = `(${profile.ratings.totalRatings} reviews)`;
+        } else {
+          ratingElement.textContent = 'No ratings yet';
+          reviewsElement.textContent = '';
+        }
+
+        // Stats
+        document.getElementById('completedRequests').textContent = transactions.length;
+        
+        const totalEarnings = transactions.reduce((sum, t) => sum + t.totalAmount, 0);
+        document.getElementById('totalEarnings').textContent = 
+          RaddiWala.formatCurrency(totalEarnings);
+
+        // Basic information form
+        document.getElementById('name').value = profile.name;
+        document.getElementById('phone').value = profile.phone;
+      }
+
+      function createStarRating(rating) {
+        const fullStars = Math.floor(rating);
+        const hasHalfStar = rating % 1 >= 0.5;
+        let stars = '';
+        
+        for (let i = 0; i < fullStars; i++) {
+          stars += '★';
+        }
+        if (hasHalfStar) {
+          stars += '☆';
+        }
+        for (let i = fullStars + (hasHalfStar ? 1 : 0); i < 5; i++) {
+          stars += '☆';
+        }
+        
+        return `<span class="rating">${stars}</span>`;
+      }
+
+      function renderAddresses() {
+        const container = document.getElementById('addressesList');
+        
+        if (userAddresses.length === 0) {
+          container.innerHTML = `
+            <div class="no-addresses">
+              <i class="fas fa-map-marker-alt"></i>
+              <p>No addresses added yet</p>
+            </div>
+          `;
+          return;
+        }
+
+        const addressesHTML = userAddresses.map(address => `
+          <div class="address-card">
+            <div class="address-info">
+              <h4>${address.line}</h4>
+              <p>${address.area}, ${address.city} - ${address.pincode}</p>
+              ${address.landmark ? `<p class="landmark"><i class="fas fa-map-pin"></i> ${address.landmark}</p>` : ''}
+            </div>
+            <div class="address-actions">
+              <button class="btn btn-sm btn-secondary" onclick="editAddress('${address._id}')">
+                <i class="fas fa-edit"></i> Edit
+              </button>
+              <button class="btn btn-sm btn-danger" onclick="deleteAddress('${address._id}')">
+                <i class="fas fa-trash"></i> Delete
+              </button>
+            </div>
+          </div>
+        `).join('');
+
+        container.innerHTML = addressesHTML;
+      }
+
+      // Profile form submission
+      document.getElementById('profileForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const formData = {
+          name: document.getElementById('name').value,
+          phone: document.getElementById('phone').value
+        };
+
+        const submitBtn = e.target.querySelector('button[type="submit"]');
+        clearErrors();
+
+        if (!validateProfileForm(formData)) {
+          return;
+        }
+
+        try {
+          RaddiWala.showLoading(submitBtn);
+          
+          await RaddiWala.apiCall('/customers/profile', {
+            method: 'PUT',
+            body: JSON.stringify(formData)
+          });
+          
+          RaddiWala.showNotification('Profile updated successfully!', 'success');
+          loadProfileData(); // Reload data
+          
+        } catch (error) {
+          RaddiWala.showNotification(error.message, 'error');
+        } finally {
+          RaddiWala.hideLoading(submitBtn, 'Update Profile');
+        }
+      });
+
+      // Address management functions
+      function showAddAddressModal() {
+        if (userAddresses.length >= 3) {
+          RaddiWala.showNotification('Maximum 3 addresses allowed', 'warning');
+          return;
+        }
+        document.getElementById('addAddressModal').style.display = 'flex';
+      }
+
+      function hideAddAddressModal() {
+        document.getElementById('addAddressModal').style.display = 'none';
+        document.getElementById('addAddressForm').reset();
+      }
+
+      function editAddress(addressId) {
+        const address = userAddresses.find(a => a._id === addressId);
+        currentEditAddress = address;
+        
+        document.getElementById('editAddressId').value = address._id;
+        document.getElementById('editAddressLine').value = address.line;
+        document.getElementById('editAddressArea').value = address.area;
+        document.getElementById('editAddressCity').value = address.city;
+        document.getElementById('editAddressPincode').value = address.pincode;
+        document.getElementById('editAddressLandmark').value = address.landmark || '';
+        
+        document.getElementById('editAddressModal').style.display = 'flex';
+      }
+
+      function hideEditAddressModal() {
+        document.getElementById('editAddressModal').style.display = 'none';
+        document.getElementById('editAddressForm').reset();
+        currentEditAddress = null;
+      }
+
+      async function deleteAddress(addressId) {
+        if (!confirm('Are you sure you want to delete this address?')) {
+          return;
+        }
+
+        try {
+          await RaddiWala.apiCall(`/customers/addresses/${addressId}`, {
+            method: 'DELETE'
+          });
+          
+          RaddiWala.showNotification('Address deleted successfully!', 'success');
+          loadProfileData(); // Reload data
+          
+        } catch (error) {
+          RaddiWala.showNotification(error.message, 'error');
+        }
+      }
+
+      // Add address form submission
+      document.getElementById('addAddressForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const formData = {
+          line: document.getElementById('newAddressLine').value,
+          area: document.getElementById('newAddressArea').value,
+          city: document.getElementById('newAddressCity').value,
+          pincode: document.getElementById('newAddressPincode').value,
+          landmark: document.getElementById('newAddressLandmark').value
+        };
+        
+        try {
+          await RaddiWala.apiCall('/customers/addresses', {
+            method: 'POST',
+            body: JSON.stringify(formData)
+          });
+          
+          RaddiWala.showNotification('Address added successfully!', 'success');
+          hideAddAddressModal();
+          loadProfileData(); // Reload data
+          
+        } catch (error) {
+          RaddiWala.showNotification(error.message, 'error');
+        }
+      });
+
+      // Edit address form submission
+      document.getElementById('editAddressForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const formData = {
+          line: document.getElementById('editAddressLine').value,
+          area: document.getElementById('editAddressArea').value,
+          city: document.getElementById('editAddressCity').value,
+          pincode: document.getElementById('editAddressPincode').value,
+          landmark: document.getElementById('editAddressLandmark').value
+        };
+        
+        const addressId = document.getElementById('editAddressId').value;
+        
+        try {
+          await RaddiWala.apiCall(`/customers/addresses/${addressId}`, {
+            method: 'PUT',
+            body: JSON.stringify(formData)
+          });
+          
+          RaddiWala.showNotification('Address updated successfully!', 'success');
+          hideEditAddressModal();
+          loadProfileData(); // Reload data
+          
+        } catch (error) {
+          RaddiWala.showNotification(error.message, 'error');
+        }
+      });
+
+      // Profile picture upload
+      document.getElementById('profilePictureInput').addEventListener('change', async function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        // Validate file
+        if (!file.type.startsWith('image/')) {
+          RaddiWala.showNotification('Please select an image file', 'error');
+          return;
+        }
+
+        if (file.size > 5 * 1024 * 1024) { // 5MB limit
+          RaddiWala.showNotification('Image size must be less than 5MB', 'error');
+          return;
+        }
+
+        try {
+          const formData = new FormData();
+          formData.append('profilePicture', file);
+
+          // Use fetch directly instead of RaddiWala.apiCall for file uploads
+          const response = await fetch('/api/customers/profile-picture', {
+            method: 'POST',
+            body: formData,
+            credentials: 'include'
+          });
+
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Upload failed');
+          }
+
+          const result = await response.json();
+
+          // Update profile image
+          const profileImage = document.getElementById('profileImage');
+          const profileIcon = document.getElementById('profileIcon');
+
+          profileImage.src = result.profilePictureUrl;
+          profileImage.style.display = 'block';
+          profileIcon.style.display = 'none';
+
+          RaddiWala.showNotification('Profile picture updated successfully!', 'success');
+        } catch (error) {
+          console.error('Profile picture upload error:', error);
+          RaddiWala.showNotification(error.message || 'Something went wrong', 'error');
+        }
+      });
+
+      function validateProfileForm(formData) {
+        let isValid = true;
+        
+        if (!formData.name || formData.name.trim().length < 2) {
+          showError('nameError', 'Name must be at least 2 characters long');
+          isValid = false;
+        }
+        
+        if (!formData.phone || !RaddiWala.validatePhone(formData.phone)) {
+          showError('phoneError', 'Please enter a valid 10-digit mobile number');
+          isValid = false;
+        }
+        
+        return isValid;
+      }
+
+      function showError(elementId, message) {
+        document.getElementById(elementId).textContent = message;
+      }
+
+      function clearErrors() {
+        const errorElements = document.querySelectorAll('.error-message');
+        errorElements.forEach(el => el.textContent = '');
+      }
+
+      // Load data when page loads
+      document.addEventListener('DOMContentLoaded', loadProfileData);

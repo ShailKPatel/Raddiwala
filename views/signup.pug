@@ -1,0 +1,352 @@
+doctype html
+html(lang="en")
+  head
+    meta(charset="UTF-8")
+    meta(name="viewport", content="width=device-width, initial-scale=1.0")
+    title Sign Up - RaddiWala
+    link(rel="stylesheet", href="/css/style.css")
+    link(rel="stylesheet", href="/css/auth.css")
+    link(href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css", rel="stylesheet")
+  body
+    .auth-container
+      .auth-card
+        .auth-header
+          img(src="/logo.png", alt="RaddiWala Logo", class="auth-logo")
+          h1 Join RaddiWala
+          p Create your account to get started
+
+        form#signupForm.auth-form
+          .form-step#step1
+            .form-group
+              label(for="email") Email Address
+              input#email(type="email", name="email", required, placeholder="Enter your email")
+              .error-message#emailError
+
+            .form-group
+              label(for="role") I am a:
+              select#role(name="role", required, onchange="toggleRoleFields()")
+                option(value="") Select your role
+                option(value="customer") Customer (I want to sell scrap)
+                option(value="raddiwala") Raddiwala (I collect scrap)
+              .error-message#roleError
+
+            button.btn.btn-primary.btn-full(type="button", onclick="sendSignupOTP()") Send OTP
+
+          .form-step#step2(style="display: none;")
+            .otp-info
+              p OTP has been sent to: 
+                span#emailDisplay
+              p Please enter the 4-digit code below:
+
+            .form-group
+              label(for="otp") Enter OTP
+              input#otp(type="text", name="otp", maxlength="4", placeholder="Enter 4-digit OTP")
+              .error-message#otpError
+
+            .development-mode#devMode(style="display: none;")
+              p.dev-notice Development Mode - OTP: 
+                span#devOTP
+
+            button.btn.btn-primary.btn-full(type="button", onclick="verifyOTPAndProceed()") Verify OTP
+
+          .form-step#step3(style="display: none;")
+            .form-group
+              label(for="name") Full Name
+              input#name(type="text", name="name", required, placeholder="Enter your full name")
+              .error-message#nameError
+
+            .form-group
+              label(for="phone") Phone Number
+              input#phone(type="tel", name="phone", required, placeholder="Enter 10-digit mobile number")
+              .error-message#phoneError
+
+            // Customer-specific fields
+            .customer-fields#customerFields(style="display: none;")
+              p.info-text As a customer, you can add addresses later from your profile.
+
+            // Raddiwala-specific fields
+            .raddiwala-fields#raddiwalaFields(style="display: none;")
+              h3 Shop Address Details
+              .form-row
+                .form-group
+                  label(for="shopLine") Address Line
+                  input#shopLine(type="text", name="shopLine", placeholder="Shop address line")
+                  .error-message#shopLineError
+
+                .form-group
+                  label(for="shopArea") Area
+                  input#shopArea(type="text", name="shopArea", placeholder="Area/Locality")
+                  .error-message#shopAreaError
+
+              .form-row
+                .form-group
+                  label(for="shopCity") City
+                  input#shopCity(type="text", name="shopCity", placeholder="City")
+                  .error-message#shopCityError
+
+                .form-group
+                  label(for="shopPincode") Pincode
+                  input#shopPincode(type="text", name="shopPincode", maxlength="6", placeholder="6-digit pincode")
+                  .error-message#shopPincodeError
+
+              .form-group
+                label(for="shopLandmark") Landmark (Optional)
+                input#shopLandmark(type="text", name="shopLandmark", placeholder="Nearby landmark")
+
+            .form-actions
+              button.btn.btn-secondary(type="button", onclick="goBackToStep2()") Back
+              button.btn.btn-primary(type="submit") Create Account
+
+        .auth-footer
+          p Already have an account? 
+            a(href="/login") Login here
+          p 
+            a(href="/") Back to Home
+
+    script(src="/js/main.js")
+    script.
+      let currentEmail = '';
+      let currentRole = '';
+      let otpVerified = false;
+
+      function toggleRoleFields() {
+        const role = document.getElementById('role').value;
+        const customerFields = document.getElementById('customerFields');
+        const raddiwalaFields = document.getElementById('raddiwalaFields');
+
+        if (role === 'customer') {
+          customerFields.style.display = 'block';
+          raddiwalaFields.style.display = 'none';
+          clearRaddiwalaFields();
+        } else if (role === 'raddiwala') {
+          customerFields.style.display = 'none';
+          raddiwalaFields.style.display = 'block';
+        } else {
+          customerFields.style.display = 'none';
+          raddiwalaFields.style.display = 'none';
+          clearRaddiwalaFields();
+        }
+      }
+
+      function clearRaddiwalaFields() {
+        const fields = ['shopLine', 'shopArea', 'shopCity', 'shopPincode', 'shopLandmark'];
+        fields.forEach(field => {
+          const element = document.getElementById(field);
+          if (element) element.value = '';
+        });
+      }
+
+      async function sendSignupOTP() {
+        const email = document.getElementById('email').value;
+        const role = document.getElementById('role').value;
+        const sendBtn = event.target;
+
+        // Clear previous errors
+        clearErrors();
+
+        // Validate inputs
+        if (!email) {
+          showError('emailError', 'Email is required');
+          return;
+        }
+
+        if (!RaddiWala.validateEmail(email)) {
+          showError('emailError', 'Please enter a valid email address');
+          return;
+        }
+
+        if (!role) {
+          showError('roleError', 'Please select your role');
+          return;
+        }
+
+        try {
+          RaddiWala.showLoading(sendBtn);
+          
+          const response = await RaddiWala.sendOTP(email, 'signup', role);
+          
+          currentEmail = email;
+          currentRole = role;
+          
+          // Show step 2
+          document.getElementById('step1').style.display = 'none';
+          document.getElementById('step2').style.display = 'block';
+          document.getElementById('emailDisplay').textContent = email;
+          
+          // Show development OTP if available
+          if (response.developmentOTP) {
+            document.getElementById('devOTP').textContent = response.developmentOTP;
+            document.getElementById('devMode').style.display = 'block';
+          }
+          
+          RaddiWala.showNotification('OTP sent successfully!', 'success');
+          
+        } catch (error) {
+          RaddiWala.showNotification(error.message, 'error');
+        } finally {
+          RaddiWala.hideLoading(sendBtn, 'Send OTP');
+        }
+      }
+
+      async function verifyOTPAndProceed() {
+        const otp = document.getElementById('otp').value;
+        const verifyBtn = event.target;
+
+        // Clear previous errors
+        clearErrors();
+
+        // Validate OTP
+        if (!otp) {
+          showError('otpError', 'OTP is required');
+          return;
+        }
+
+        if (!RaddiWala.validateOTP(otp)) {
+          showError('otpError', 'Please enter a valid 4-digit OTP');
+          return;
+        }
+
+        // For now, just proceed to step 3 (OTP verification will happen during final signup)
+        otpVerified = true;
+        
+        // Show step 3
+        document.getElementById('step2').style.display = 'none';
+        document.getElementById('step3').style.display = 'block';
+        
+        // Set role fields visibility
+        toggleRoleFields();
+        
+        RaddiWala.showNotification('OTP verified! Please complete your profile.', 'success');
+      }
+
+      function goBackToStep2() {
+        document.getElementById('step3').style.display = 'none';
+        document.getElementById('step2').style.display = 'block';
+      }
+
+      document.getElementById('signupForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        if (!otpVerified) {
+          RaddiWala.showNotification('Please verify OTP first', 'error');
+          return;
+        }
+
+        const formData = {
+          email: currentEmail,
+          otp: document.getElementById('otp').value,
+          role: currentRole,
+          name: document.getElementById('name').value,
+          phone: document.getElementById('phone').value
+        };
+
+        // Add shop address for raddiwala
+        if (currentRole === 'raddiwala') {
+          formData.shopAddress = {
+            line: document.getElementById('shopLine').value,
+            area: document.getElementById('shopArea').value,
+            city: document.getElementById('shopCity').value,
+            pincode: document.getElementById('shopPincode').value,
+            landmark: document.getElementById('shopLandmark').value
+          };
+        }
+
+        const submitBtn = e.target.querySelector('button[type="submit"]');
+
+        // Clear previous errors
+        clearErrors();
+
+        // Validate form
+        if (!validateSignupForm(formData)) {
+          return;
+        }
+
+        try {
+          RaddiWala.showLoading(submitBtn);
+
+          // Use form submission instead of AJAX to get proper redirects
+          const form = document.createElement('form');
+          form.method = 'POST';
+          form.action = '/api/auth/signup';
+
+          // Add all form data as hidden inputs
+          Object.keys(formData).forEach(key => {
+            if (key === 'shopAddress' && formData[key]) {
+              // Handle nested shop address object
+              Object.keys(formData[key]).forEach(shopKey => {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = `shopAddress[${shopKey}]`;
+                input.value = formData[key][shopKey];
+                form.appendChild(input);
+              });
+            } else {
+              const input = document.createElement('input');
+              input.type = 'hidden';
+              input.name = key;
+              input.value = formData[key];
+              form.appendChild(input);
+            }
+          });
+
+          document.body.appendChild(form);
+          form.submit();
+
+        } catch (error) {
+          RaddiWala.showNotification(error.message, 'error');
+          RaddiWala.hideLoading(submitBtn, 'Create Account');
+        }
+      });
+
+      function validateSignupForm(formData) {
+        let isValid = true;
+
+        // Validate name
+        if (!formData.name || formData.name.trim().length < 2) {
+          showError('nameError', 'Name must be at least 2 characters long');
+          isValid = false;
+        }
+
+        // Validate phone
+        if (!formData.phone) {
+          showError('phoneError', 'Phone number is required');
+          isValid = false;
+        } else if (!RaddiWala.validatePhone(formData.phone)) {
+          showError('phoneError', 'Please enter a valid 10-digit mobile number');
+          isValid = false;
+        }
+
+        // Validate raddiwala shop address
+        if (currentRole === 'raddiwala') {
+          if (!formData.shopAddress.line) {
+            showError('shopLineError', 'Address line is required');
+            isValid = false;
+          }
+          if (!formData.shopAddress.area) {
+            showError('shopAreaError', 'Area is required');
+            isValid = false;
+          }
+          if (!formData.shopAddress.city) {
+            showError('shopCityError', 'City is required');
+            isValid = false;
+          }
+          if (!formData.shopAddress.pincode) {
+            showError('shopPincodeError', 'Pincode is required');
+            isValid = false;
+          } else if (!/^[1-9][0-9]{5}$/.test(formData.shopAddress.pincode)) {
+            showError('shopPincodeError', 'Please enter a valid 6-digit pincode');
+            isValid = false;
+          }
+        }
+
+        return isValid;
+      }
+
+      function showError(elementId, message) {
+        document.getElementById(elementId).textContent = message;
+      }
+
+      function clearErrors() {
+        const errorElements = document.querySelectorAll('.error-message');
+        errorElements.forEach(el => el.textContent = '');
+      }

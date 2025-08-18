@@ -1,0 +1,350 @@
+doctype html
+html(lang="en")
+  head
+    meta(charset="UTF-8")
+    meta(name="viewport", content="width=device-width, initial-scale=1.0")
+    title Ongoing Requests - RaddiWala
+    link(rel="stylesheet", href="/css/style.css")
+    link(rel="stylesheet", href="/css/dashboard.css")
+    link(rel="stylesheet", href="/css/pickups.css")
+    link(href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css", rel="stylesheet")
+  body
+    // Navigation Bar
+    nav.navbar
+      .nav-container
+        .nav-logo
+          img(src="/logo.png", alt="RaddiWala Logo", onclick="window.location.href='/'")
+          span RaddiWala
+        .nav-menu
+          a.nav-link.active(href="/raddiwala/ongoing-requests") Browse Requests
+          a.nav-link(href="/raddiwala/pending-pickups") My Pickups
+          a.nav-link(href="/raddiwala/completed-pickups") History
+          a.nav-link(href="/raddiwala/subscription") Premium
+          a.nav-link(href="/raddiwala/profile") Profile
+          .nav-user
+            a.nav-link(href="#", onclick="confirmLogout()") Logout
+
+    // Main Content
+    main.dashboard-content
+      .container
+        .page-header
+          h1 Ongoing Pickup Requests
+          p Browse and bid on pickup requests in your area
+
+        // Subscription Warning (if needed)
+        .subscription-warning#subscriptionWarning(style="display: none;")
+          .warning-content
+            i.fas.fa-exclamation-triangle
+            div
+              h3 Monthly Limit Reached!
+              p You have placed bids on 50+ pickups this month. Upgrade to premium for unlimited access.
+            a.btn.btn-primary(href="/raddiwala/subscription") Upgrade to Premium
+
+        .requests-container#requestsContainer
+          .loading-spinner
+            i.fas.fa-spinner.fa-spin
+            span Loading ongoing requests...
+
+    // Bid Modal
+    .modal#bidModal
+      .modal-content
+        .modal-header
+          h3 Place Your Bid
+          button.modal-close(onclick="hideBidModal()") &times;
+        
+        .request-summary#requestSummary
+          // Request details will be populated here
+        
+        form#bidForm
+          .form-group
+            label(for="pricePerKg") Price per KG (₹) *
+            input#pricePerKg(type="number", step="0.01", min="0", required, placeholder="Enter price per kg")
+            .error-message#priceError
+
+          .form-group
+            label(for="pickupTime") Proposed Pickup Time *
+            input#pickupTime(type="text", required, placeholder="e.g., Tomorrow 10 AM, Evening 6-8 PM")
+            .error-message#pickupTimeError
+
+          .form-group
+            label(for="bidNotes") Additional Notes (Optional)
+            textarea#bidNotes(rows="3", placeholder="Any special instructions or notes...")
+
+          .estimated-amount
+            p Estimated Amount: 
+              span#estimatedAmount ₹0
+
+          .modal-actions
+            button.btn.btn-secondary(type="button", onclick="hideBidModal()") Cancel
+            button.btn.btn-primary(type="submit") Place Bid
+
+    script(src="/js/main.js")
+    script.
+      let ongoingRequests = [];
+      let currentRequest = null;
+      let canPlaceBids = true;
+
+      // Load ongoing requests
+      async function loadOngoingRequests() {
+        try {
+          console.log('Loading ongoing requests...');
+          const [requests, subscriptionStatus] = await Promise.all([
+            RaddiWala.apiCall('/raddiwalas/pickup-requests/ongoing'),
+            RaddiWala.apiCall('/subscriptions')
+          ]);
+
+          console.log('Ongoing requests response:', requests);
+          console.log('Subscription status response:', subscriptionStatus);
+
+          ongoingRequests = requests || [];
+          canPlaceBids = subscriptionStatus?.canPlaceBids !== false;
+
+          // Show subscription warning if needed
+          if (!canPlaceBids) {
+            document.getElementById('subscriptionWarning').style.display = 'block';
+          }
+
+          renderOngoingRequests();
+        } catch (error) {
+          console.error('Failed to load ongoing requests:', error);
+          document.getElementById('requestsContainer').innerHTML =
+            \`<div class="error-message">
+              <i class="fas fa-exclamation-triangle"></i>
+              <p>Failed to load ongoing requests: \${error.message}</p>
+              <button class="btn btn-secondary" onclick="loadOngoingRequests()">Retry</button>
+            </div>\`;
+        }
+      }
+
+      function showSubscriptionWarning() {
+        document.getElementById('subscriptionWarning').style.display = 'block';
+        showEmptyState('Monthly pickup limit exceeded. Please upgrade to premium to continue bidding.');
+      }
+
+      function renderOngoingRequests() {
+        const container = document.getElementById('requestsContainer');
+        
+        if (ongoingRequests.length === 0) {
+          showEmptyState('No ongoing pickup requests found in your area');
+          return;
+        }
+
+        const requestsHTML = ongoingRequests.map(request => {
+          const hasMyBid = request.hasMyBid;
+          
+          return `
+            <div class="pickup-card ${hasMyBid ? 'has-bid' : ''}">
+              <div class="pickup-header">
+                <div class="pickup-info">
+                  <h3>${Array.isArray(request.wasteType) ? request.wasteType.join(', ') : request.wasteType}</h3>
+                  <p class="pickup-weight">${request.weightCategory}</p>
+                  <p class="pickup-date">Posted: ${RaddiWala.formatDate(request.createdAt)}</p>
+                </div>
+                <div class="pickup-customer">
+                  <h4>${request.customerId.name}</h4>
+                  <div class="customer-rating">
+                    ${createStarRating(request.customerId.ratings.avgRating)}
+                    <span>(${request.customerId.ratings.totalRatings} reviews)</span>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="pickup-details">
+                <div class="pickup-photos">
+                  ${request.photos.slice(0, 3).map(photo =>
+                    `<img src="${photo}" alt="Scrap photo" onclick="showImageModal('${photo}')">`
+                  ).join('')}
+                  ${request.photos.length > 3 ? `<div class="more-photos">+${request.photos.length - 3}</div>` : ''}
+                </div>
+                
+                <div class="pickup-description">
+                  <p><strong>Description:</strong> ${request.description || 'No description provided'}</p>
+                  <p><strong>Address:</strong> ${request.addressId.area}, ${request.addressId.city} - ${request.addressId.pincode}</p>
+                  ${request.timeWindow ? `<p><strong>Preferred Time:</strong> ${request.timeWindow}</p>` : ''}
+                </div>
+              </div>
+              
+              <div class="pickup-actions">
+                ${hasMyBid ? 
+                  '<div class="bid-placed"><i class="fas fa-check"></i> Bid Already Placed</div>' :
+                  canPlaceBids ? 
+                    `<button class="btn btn-primary" onclick="showBidModal('${request._id}')">Place Bid</button>` :
+                    '<button class="btn btn-secondary" disabled>Premium Required</button>'
+                }
+              </div>
+            </div>
+          `;
+        }).join('');
+
+        container.innerHTML = requestsHTML;
+      }
+
+      function createStarRating(rating) {
+        const fullStars = Math.floor(rating);
+        const hasHalfStar = rating % 1 >= 0.5;
+        let stars = '';
+        
+        for (let i = 0; i < fullStars; i++) {
+          stars += '★';
+        }
+        if (hasHalfStar) {
+          stars += '☆';
+        }
+        for (let i = fullStars + (hasHalfStar ? 1 : 0); i < 5; i++) {
+          stars += '☆';
+        }
+        
+        return `<span class="rating">${stars}</span>`;
+      }
+
+      function showEmptyState(message) {
+        const container = document.getElementById('requestsContainer');
+        container.innerHTML = `
+          <div class="empty-state">
+            <i class="fas fa-search"></i>
+            <h3>${message}</h3>
+            <p>Check back later for new pickup requests in your area</p>
+          </div>
+        `;
+      }
+
+      // Show bid modal
+      function showBidModal(requestId) {
+        console.log('showBidModal called with requestId:', requestId);
+        console.log('canPlaceBids:', canPlaceBids);
+
+        if (!canPlaceBids) {
+          RaddiWala.showNotification('Please upgrade to premium to place more bids', 'warning');
+          return;
+        }
+
+        const request = ongoingRequests.find(r => r._id === requestId);
+        console.log('Found request:', request);
+        currentRequest = request;
+
+        const modal = document.getElementById('bidModal');
+        const summary = document.getElementById('requestSummary');
+
+        summary.innerHTML = \`
+          <div class="request-info">
+            <h4>\${Array.isArray(request.wasteType) ? request.wasteType.join(', ') : request.wasteType} - \${request.weightCategory}</h4>
+            <p><strong>Customer:</strong> \${request.customerId.name}</p>
+            <p><strong>Location:</strong> \${request.addressId.area}, \${request.addressId.city}</p>
+            \${request.timeWindow ? \`<p><strong>Preferred Time:</strong> \${request.timeWindow}</p>\` : ''}
+          </div>
+        \`;
+
+        // Reset form
+        document.getElementById('bidForm').reset();
+        document.getElementById('estimatedAmount').textContent = '₹0';
+        clearErrors();
+
+        modal.style.display = 'flex';
+      }
+
+      function hideBidModal() {
+        document.getElementById('bidModal').style.display = 'none';
+        currentRequest = null;
+      }
+
+      // Calculate estimated amount
+      document.getElementById('pricePerKg').addEventListener('input', function() {
+        const pricePerKg = parseFloat(this.value) || 0;
+        const weightCategory = currentRequest?.weightCategory || '';
+        
+        // Weight estimation mapping
+        const weightMap = {
+          "0–2 kg": 1,
+          "2–5 kg": 3.5,
+          "5–10 kg": 7.5,
+          "10–20 kg": 15,
+          "20–30 kg": 25,
+          "30–50 kg": 40,
+          "50+ kg": 60
+        };
+        
+        const estimatedWeight = weightMap[weightCategory] || 1;
+        const estimatedAmount = pricePerKg * estimatedWeight;
+        
+        document.getElementById('estimatedAmount').textContent = 
+          RaddiWala.formatCurrency(estimatedAmount);
+      });
+
+      // Bid form submission
+      document.getElementById('bidForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const formData = {
+          pickupRequestId: currentRequest._id,
+          itemRates: [{
+            wasteType: currentRequest.wasteType,
+            pricePerKg: parseFloat(document.getElementById('pricePerKg').value)
+          }],
+          proposedPickupTime: document.getElementById('pickupTime').value,
+          notes: document.getElementById('bidNotes').value
+        };
+
+        const submitBtn = e.target.querySelector('button[type="submit"]');
+        
+        // Clear previous errors
+        clearErrors();
+        
+        // Validate form
+        if (!validateBidForm(formData)) {
+          return;
+        }
+
+        try {
+          RaddiWala.showLoading(submitBtn);
+          
+          await RaddiWala.apiCall('/bids', {
+            method: 'POST',
+            body: JSON.stringify(formData)
+          });
+          
+          RaddiWala.showNotification('Bid placed successfully!', 'success');
+          hideBidModal();
+          loadOngoingRequests(); // Reload data
+          
+        } catch (error) {
+          RaddiWala.showNotification(error.message, 'error');
+        } finally {
+          RaddiWala.hideLoading(submitBtn, 'Place Bid');
+        }
+      });
+
+      function validateBidForm(formData) {
+        let isValid = true;
+        
+        if (!formData.itemRates[0].pricePerKg || formData.itemRates[0].pricePerKg <= 0) {
+          showError('priceError', 'Please enter a valid price per kg');
+          isValid = false;
+        }
+        
+        if (!formData.proposedPickupTime.trim()) {
+          showError('pickupTimeError', 'Please enter proposed pickup time');
+          isValid = false;
+        }
+        
+        return isValid;
+      }
+
+      function showError(elementId, message) {
+        document.getElementById(elementId).textContent = message;
+      }
+
+      function clearErrors() {
+        const errorElements = document.querySelectorAll('.error-message');
+        errorElements.forEach(el => el.textContent = '');
+      }
+
+      // Load data when page loads
+      document.addEventListener('DOMContentLoaded', loadOngoingRequests);
+
+
+
+      function confirmLogout() {
+        if (confirm('Are you sure you want to logout?')) {
+          window.location.href = '/logout';
+        }
+      }

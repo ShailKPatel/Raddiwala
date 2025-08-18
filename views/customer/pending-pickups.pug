@@ -1,0 +1,272 @@
+doctype html
+html(lang="en")
+  head
+    meta(charset="UTF-8")
+    meta(name="viewport", content="width=device-width, initial-scale=1.0")
+    title Pending Pickups - RaddiWala
+    link(rel="stylesheet", href="/css/style.css")
+    link(rel="stylesheet", href="/css/dashboard.css")
+    link(rel="stylesheet", href="/css/pickups.css")
+    link(href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css", rel="stylesheet")
+  body
+    // Navigation Bar
+    nav.navbar
+      .nav-container
+        .nav-logo
+          img(src="/logo.png", alt="RaddiWala Logo", onclick="window.location.href='/'")
+          span RaddiWala
+        .nav-menu
+          a.nav-link(href="/customer/sell-scrap") Sell Scrap
+          a.nav-link.active(href="/customer/pending-pickups") My Requests
+          a.nav-link(href="/customer/completed-pickups") History
+          a.nav-link(href="/customer/profile") Profile
+          .nav-user
+            a.nav-link(href="/logout") Logout
+
+    // Main Content
+    main.dashboard-content
+      .container
+        .page-header
+          h1 Pending Pickups
+          p Manage your pending pickup requests and review bids
+
+        .pickups-container#pickupsContainer
+          .loading-spinner
+            i.fas.fa-spinner.fa-spin
+            span Loading pending pickups...
+
+
+
+    // Confirmation Modal
+    .modal#confirmModal
+      .modal-content
+        .modal-header
+          h3 Confirm Action
+          button.modal-close(onclick="hideConfirmModal()") &times;
+        
+        .confirm-content
+          p#confirmMessage
+        
+        .modal-actions
+          button.btn.btn-secondary(onclick="hideConfirmModal()") Cancel
+          button.btn.btn-primary#confirmButton Confirm
+
+    script(src="/js/main.js")
+    script.
+      let pendingRequests = [];
+      let currentBid = null;
+
+      // Load pending pickups
+      async function loadPendingPickups() {
+        try {
+          const response = await RaddiWala.apiCall('/customers/pickup-requests/pending');
+          pendingRequests = response;
+          renderPendingPickups();
+        } catch (error) {
+          console.error('Failed to load pending pickups:', error);
+          RaddiWala.showNotification('Failed to load pending pickups', 'error');
+          showEmptyState('Failed to load pending pickups');
+        }
+      }
+
+      function renderPendingPickups() {
+        const container = document.getElementById('pickupsContainer');
+        
+        if (pendingRequests.length === 0) {
+          showEmptyState('No pending pickups found');
+          return;
+        }
+
+        const pickupsHTML = pendingRequests.map(request => {
+          const bidsCount = request.bids ? request.bids.length : 0;
+          const statusClass = request.status === 'accepted' ? 'accepted' : 'open';
+          
+          return `
+            <div class="pickup-card">
+              <div class="pickup-header">
+                <div class="pickup-info">
+                  <h3>${request.wasteType}</h3>
+                  <p class="pickup-weight">${request.weightCategory}</p>
+                  <p class="pickup-date">Created: ${RaddiWala.formatDate(request.createdAt)}</p>
+                </div>
+                <div class="pickup-status status-${statusClass}">
+                  ${request.status.charAt(0).toUpperCase() + request.status.slice(1)}
+                </div>
+              </div>
+              
+              <div class="pickup-details">
+                <div class="pickup-photos">
+                  ${request.photos.slice(0, 3).map(photo => 
+                    `<img src="${photo}" alt="Scrap photo" onclick="showImageModal('${photo}')">`
+                  ).join('')}
+                  ${request.photos.length > 3 ? `<div class="more-photos">+${request.photos.length - 3}</div>` : ''}
+                </div>
+                
+                <div class="pickup-description">
+                  <p><strong>Description:</strong> ${request.description || 'No description provided'}</p>
+                  <p><strong>Address:</strong> ${request.addressId.line}, ${request.addressId.area}, ${request.addressId.city}</p>
+                  ${request.timeWindow ? `<p><strong>Preferred Time:</strong> ${request.timeWindow}</p>` : ''}
+                </div>
+              </div>
+              
+              <div class="pickup-bids">
+                <div class="bids-header">
+                  <h4>Bids Received (${bidsCount})</h4>
+                  ${request.status === 'open' && bidsCount > 0 ? 
+                    '<p class="bids-instruction">Click on a bid to view details and accept</p>' : ''}
+                </div>
+                
+                ${bidsCount === 0 ?
+                  '<p class="no-bids">No bids received yet. Please wait for raddiwalas to place bids.</p>' :
+                  `<div class="bids-list">
+                    ${request.bids.map(bid => `
+                      <div class="bid-item ${request.status === 'accepted' && request.acceptedBidId === bid._id ? 'accepted' : ''}">
+                        <div class="bid-header">
+                          <div class="bid-raddiwala">
+                            <h5>${bid.raddiwalaId.name}</h5>
+                            <div class="raddiwala-rating">
+                              ${createStarRating(bid.raddiwalaId.ratings.avgRating)}
+                              <span>(${bid.raddiwalaId.ratings.totalRatings} reviews)</span>
+                            </div>
+                          </div>
+                          <div class="bid-price-main">
+                            <span class="price-value">₹${bid.itemRates[0]?.pricePerKg || 0}/kg</span>
+                          </div>
+                        </div>
+
+                        <div class="bid-details-expanded">
+                          <div class="bid-info-grid">
+                            <div class="bid-info-item">
+                              <i class="fas fa-clock"></i>
+                              <span>Pickup: ${bid.proposedPickupTime}</span>
+                            </div>
+                            <div class="bid-info-item">
+                              <i class="fas fa-calculator"></i>
+                              <span>Estimated: ${RaddiWala.formatCurrency(bid.totalEstimatedAmount)}</span>
+                            </div>
+                            ${bid.notes ? `
+                              <div class="bid-info-item full-width">
+                                <i class="fas fa-comment"></i>
+                                <span>Notes: ${bid.notes}</span>
+                              </div>
+                            ` : ''}
+                          </div>
+
+                          <div class="bid-actions">
+                            ${request.status === 'open' ?
+                              `<button class="btn btn-success btn-sm" onclick="acceptBid('${bid._id}', '${request._id}')">
+                                <i class="fas fa-check"></i> Accept Bid
+                              </button>` :
+                              request.status === 'accepted' && request.acceptedBidId === bid._id ?
+                                '<span class="bid-status accepted"><i class="fas fa-check-circle"></i> Accepted</span>' :
+                                '<span class="bid-status rejected">Not Selected</span>'
+                            }
+                          </div>
+                        </div>
+                      </div>
+                    `).join('')}
+                  </div>`
+                }
+              </div>
+              
+              <div class="pickup-actions">
+                ${request.status === 'open' ? 
+                  `<button class="btn btn-danger btn-sm" onclick="cancelPickup('${request._id}')">Cancel Request</button>` :
+                  request.status === 'accepted' ? 
+                    '<p class="accepted-message">Pickup accepted! Wait for the raddiwala to complete the pickup.</p>' : ''
+                }
+              </div>
+            </div>
+          `;
+        }).join('');
+
+        container.innerHTML = pickupsHTML;
+      }
+
+      function createStarRating(rating) {
+        const fullStars = Math.floor(rating);
+        const hasHalfStar = rating % 1 >= 0.5;
+        let stars = '';
+        
+        for (let i = 0; i < fullStars; i++) {
+          stars += '★';
+        }
+        if (hasHalfStar) {
+          stars += '☆';
+        }
+        for (let i = fullStars + (hasHalfStar ? 1 : 0); i < 5; i++) {
+          stars += '☆';
+        }
+        
+        return `<span class="rating">${stars}</span>`;
+      }
+
+      function showEmptyState(message) {
+        const container = document.getElementById('pickupsContainer');
+        container.innerHTML = `
+          <div class="empty-state">
+            <i class="fas fa-inbox"></i>
+            <h3>${message}</h3>
+            <p>Create a new pickup request to get started</p>
+            <a href="/customer/sell-scrap" class="btn btn-primary">Sell Scrap Now</a>
+          </div>
+        `;
+      }
+
+
+
+      // Accept bid
+      async function acceptBid(bidId, requestId) {
+        showConfirmModal(
+          'Are you sure you want to accept this bid? This action cannot be undone.',
+          async () => {
+            try {
+              await RaddiWala.apiCall(`/pickup-requests/${requestId}/accept-bid`, {
+                method: 'POST',
+                body: JSON.stringify({ bidId })
+              });
+              
+              RaddiWala.showNotification('Bid accepted successfully!', 'success');
+              loadPendingPickups(); // Reload data
+            } catch (error) {
+              RaddiWala.showNotification(error.message, 'error');
+            }
+          }
+        );
+      }
+
+      // Cancel pickup
+      async function cancelPickup(requestId) {
+        showConfirmModal(
+          'Are you sure you want to cancel this pickup request? This action cannot be undone.',
+          async () => {
+            try {
+              await RaddiWala.apiCall(`/pickup-requests/${requestId}/cancel`, {
+                method: 'POST'
+              });
+              
+              RaddiWala.showNotification('Pickup request cancelled successfully!', 'success');
+              loadPendingPickups(); // Reload data
+            } catch (error) {
+              RaddiWala.showNotification(error.message, 'error');
+            }
+          }
+        );
+      }
+
+      // Confirmation modal
+      function showConfirmModal(message, onConfirm) {
+        document.getElementById('confirmMessage').textContent = message;
+        document.getElementById('confirmButton').onclick = () => {
+          hideConfirmModal();
+          onConfirm();
+        };
+        document.getElementById('confirmModal').style.display = 'flex';
+      }
+
+      function hideConfirmModal() {
+        document.getElementById('confirmModal').style.display = 'none';
+      }
+
+      // Load data when page loads
+      document.addEventListener('DOMContentLoaded', loadPendingPickups);

@@ -1,0 +1,172 @@
+doctype html
+html(lang="en")
+  head
+    meta(charset="UTF-8")
+    meta(name="viewport", content="width=device-width, initial-scale=1.0")
+    title= title
+    link(rel="stylesheet", href="/css/style.css")
+    link(href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css", rel="stylesheet")
+  body
+    // Navigation Bar (only if user is logged in)
+    if user
+      nav.navbar
+        .nav-container
+          .nav-logo
+            img(src="/logo.png", alt="RaddiWala Logo", onclick="window.location.href='/'")
+            span RaddiWala
+          .nav-menu
+            if user.role === 'customer'
+              a.nav-link(href="/customer/dashboard") Dashboard
+              a.nav-link(href="/customer/sell-scrap") Sell Scrap
+              a.nav-link(href="/customer/pending-pickups") My Requests
+              a.nav-link(href="/customer/completed-pickups") History
+              a.nav-link(href="/customer/profile") Profile
+            else if user.role === 'raddiwala'
+              a.nav-link(href="/raddiwala/dashboard") Dashboard
+              a.nav-link(href="/raddiwala/ongoing-requests") Browse Requests
+              a.nav-link(href="/raddiwala/pending-pickups") My Pickups
+              a.nav-link(href="/raddiwala/completed-pickups") History
+              a.nav-link(href="/raddiwala/subscription") Premium
+              a.nav-link(href="/raddiwala/profile") Profile
+            .nav-user
+              a.nav-link(href="#", onclick="confirmLogout()") Logout
+
+    // Main Content
+    main.main-content
+      // Hero Section
+      section.hero
+        .hero-content
+          .hero-logo
+            img(src="/logo.png", alt="RaddiWala Logo")
+          h1.hero-title Welcome to RaddiWala
+          p.hero-subtitle Connecting You with Scrap Collectors for a Greener Tomorrow
+          .hero-description
+            p Transform your waste into value while contributing to environmental sustainability.
+              | RaddiWala makes it easy to sell your scrap materials to verified collectors in your area.
+
+          if !user
+            .hero-actions
+              a.btn.btn-primary(href="/signup") Get Started
+              a.btn.btn-secondary(href="/login") Login
+          else
+            .hero-actions
+              if user.role === 'customer'
+                a.btn.btn-primary(href="/customer/dashboard") Go to Dashboard
+                a.btn.btn-secondary(href="/customer/sell-scrap") Sell Scrap Now
+              else
+                a.btn.btn-primary(href="/raddiwala/dashboard") Go to Dashboard
+                a.btn.btn-secondary(href="/raddiwala/ongoing-requests") Browse Requests
+
+      // Features Section
+      section.features
+        .container
+          h2.section-title How RaddiWala Works
+          .features-grid
+            .feature-card
+              .feature-icon
+                i.fas.fa-camera
+              h3 1. Upload Photos
+              p Take photos of your scrap materials and specify the type and approximate weight.
+
+            .feature-card
+              .feature-icon
+                i.fas.fa-gavel
+              h3 2. Receive Bids
+              p Local scrap collectors will bid on your materials with competitive prices.
+
+            .feature-card
+              .feature-icon
+                i.fas.fa-handshake
+              h3 3. Accept & Schedule
+              p Choose the best offer and schedule a convenient pickup time.
+
+            .feature-card
+              .feature-icon
+                i.fas.fa-star
+              h3 4. Rate & Review
+              p Complete the transaction and rate your experience for future reference.
+
+      // Benefits Section
+      section.benefits
+        .container
+          .benefits-content
+            .benefits-text
+              h2 Why Choose RaddiWala?
+              .benefit-list
+                .benefit-item
+                  i.fas.fa-check-circle
+                  span Get the best prices for your scrap materials
+                .benefit-item
+                  i.fas.fa-check-circle
+                  span Verified and rated scrap collectors
+                .benefit-item
+                  i.fas.fa-check-circle
+                  span Convenient doorstep pickup service
+                .benefit-item
+                  i.fas.fa-check-circle
+                  span Contribute to environmental sustainability
+                .benefit-item
+                  i.fas.fa-check-circle
+                  span Secure and transparent transactions
+            .benefits-image
+              i.fas.fa-recycle.benefits-icon
+
+      // Environmental Impact Section
+      section.environmental-impact
+        .container
+          h2.section-title Our Environmental Impact
+          .impact-grid
+            .impact-card
+              h3 Waste Recycled
+              .impact-number 10,000+
+              p Kilograms of waste diverted from landfills
+
+            .impact-card
+              h3 CO2 Reduced
+              .impact-number 5,000+
+              p Kilograms of CO2 emissions prevented
+
+            .impact-card
+              h3 Trees Saved
+              .impact-number 200+
+              p Trees equivalent saved through recycling
+
+      // Call to Action
+      if !user
+        section.cta
+          .container
+            .cta-content
+              h2 Ready to Make a Difference?
+              p Join thousands of users who are already contributing to a cleaner environment
+              .cta-actions
+                a.btn.btn-primary.btn-large(href="/signup") Sign Up Now
+                a.btn.btn-secondary.btn-large(href="/login") Login
+
+    // Footer
+    footer.footer
+      .container
+        .footer-content
+          .footer-section
+            h4 RaddiWala
+            p Connecting you with scrap collectors for a greener tomorrow.
+          .footer-section
+            h4 Quick Links
+            a(href="/") Home
+            a(href="/about") About Us
+            a(href="/contact") Contact
+            a(href="/api/debug") Debug
+          .footer-section
+            h4 Support
+            a(href="/help") Help Center
+            a(href="/privacy") Privacy Policy
+            a(href="/terms") Terms of Service
+        .footer-bottom
+          p &copy; 2024 RaddiWala. All rights reserved.
+
+    script(src="/js/main.js")
+    script.
+      function confirmLogout() {
+        if (confirm('Are you sure you want to logout?')) {
+          window.location.href = '/logout';
+        }
+      }

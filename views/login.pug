@@ -1,0 +1,200 @@
+doctype html
+html(lang="en")
+  head
+    meta(charset="UTF-8")
+    meta(name="viewport", content="width=device-width, initial-scale=1.0")
+    title Login - RaddiWala
+    link(rel="stylesheet", href="/css/style.css")
+    link(rel="stylesheet", href="/css/auth.css")
+    link(href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css", rel="stylesheet")
+  body
+    .auth-container
+      .auth-card
+        .auth-header
+          img(src="/logo.png", alt="RaddiWala Logo", class="auth-logo")
+          h1 Welcome Back
+          p Login to your RaddiWala account
+
+        form#loginForm.auth-form
+          .form-step#step1
+            .form-group
+              label(for="email") Email Address
+              input#email(type="email", name="email", required, placeholder="Enter your email")
+              .error-message#emailError
+
+            .form-group
+              label(for="role") I am a:
+              select#role(name="role", required)
+                option(value="") Select your role
+                option(value="customer") Customer (I want to sell scrap)
+                option(value="raddiwala") Raddiwala (I collect scrap)
+              .error-message#roleError
+
+            button.btn.btn-primary.btn-full(type="button", onclick="sendLoginOTP()") Send OTP
+
+          .form-step#step2(style="display: none;")
+            .otp-info
+              p OTP has been sent to: 
+                span#emailDisplay
+              p Please enter the 4-digit code below:
+
+            .form-group
+              label(for="otp") Enter OTP
+              input#otp(type="text", name="otp", maxlength="4", placeholder="Enter 4-digit OTP")
+              .error-message#otpError
+
+            .development-mode#devMode(style="display: none;")
+              p.dev-notice Development Mode - OTP: 
+                span#devOTP
+
+            .form-actions
+              button.btn.btn-secondary(type="button", onclick="goBackToStep1()") Back
+              button.btn.btn-primary(type="submit") Login
+
+        .auth-footer
+          p Don't have an account? 
+            a(href="/signup") Sign up here
+          p 
+            a(href="/") Back to Home
+
+    script(src="/js/main.js")
+    script.
+      let currentEmail = '';
+      let currentRole = '';
+
+      async function sendLoginOTP() {
+        const email = document.getElementById('email').value;
+        const role = document.getElementById('role').value;
+        const sendBtn = event.target;
+
+        // Clear previous errors
+        clearErrors();
+
+        // Validate inputs
+        if (!email) {
+          showError('emailError', 'Email is required');
+          return;
+        }
+
+        if (!RaddiWala.validateEmail(email)) {
+          showError('emailError', 'Please enter a valid email address');
+          return;
+        }
+
+        if (!role) {
+          showError('roleError', 'Please select your role');
+          return;
+        }
+
+        try {
+          RaddiWala.showLoading(sendBtn);
+          
+          const response = await RaddiWala.sendOTP(email, 'login', role);
+          
+          currentEmail = email;
+          currentRole = role;
+          
+          // Show step 2
+          document.getElementById('step1').style.display = 'none';
+          document.getElementById('step2').style.display = 'block';
+          document.getElementById('emailDisplay').textContent = email;
+          
+          // Show development OTP if available
+          if (response.developmentOTP) {
+            document.getElementById('devOTP').textContent = response.developmentOTP;
+            document.getElementById('devMode').style.display = 'block';
+          }
+          
+          RaddiWala.showNotification('OTP sent successfully!', 'success');
+          
+        } catch (error) {
+          RaddiWala.showNotification(error.message, 'error');
+        } finally {
+          RaddiWala.hideLoading(sendBtn, 'Send OTP');
+        }
+      }
+
+      function goBackToStep1() {
+        document.getElementById('step2').style.display = 'none';
+        document.getElementById('step1').style.display = 'block';
+        document.getElementById('otp').value = '';
+        clearErrors();
+      }
+
+      document.getElementById('loginForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const otp = document.getElementById('otp').value;
+        const submitBtn = e.target.querySelector('button[type="submit"]');
+
+        // Clear previous errors
+        clearErrors();
+
+        // Validate OTP
+        if (!otp) {
+          showError('otpError', 'OTP is required');
+          return;
+        }
+
+        if (!RaddiWala.validateOTP(otp)) {
+          showError('otpError', 'Please enter a valid 4-digit OTP');
+          return;
+        }
+
+        try {
+          RaddiWala.showLoading(submitBtn);
+
+          // Use form submission instead of AJAX to get proper redirects
+          const form = document.createElement('form');
+          form.method = 'POST';
+          form.action = '/api/auth/login';
+
+          const emailInput = document.createElement('input');
+          emailInput.type = 'hidden';
+          emailInput.name = 'email';
+          emailInput.value = currentEmail;
+          form.appendChild(emailInput);
+
+          const otpInput = document.createElement('input');
+          otpInput.type = 'hidden';
+          otpInput.name = 'otp';
+          otpInput.value = otp;
+          form.appendChild(otpInput);
+
+          const roleInput = document.createElement('input');
+          roleInput.type = 'hidden';
+          roleInput.name = 'role';
+          roleInput.value = currentRole;
+          form.appendChild(roleInput);
+
+          document.body.appendChild(form);
+          form.submit();
+
+        } catch (error) {
+          showError('otpError', error.message);
+          RaddiWala.hideLoading(submitBtn, 'Login');
+        }
+      });
+
+      function showError(elementId, message) {
+        document.getElementById(elementId).textContent = message;
+      }
+
+      function clearErrors() {
+        const errorElements = document.querySelectorAll('.error-message');
+        errorElements.forEach(el => el.textContent = '');
+      }
+
+      // Auto-focus on OTP input when step 2 is shown
+      const observer = new MutationObserver(function(mutations) {
+        mutations.forEach(function(mutation) {
+          if (mutation.target.id === 'step2' && mutation.target.style.display !== 'none') {
+            document.getElementById('otp').focus();
+          }
+        });
+      });
+
+      observer.observe(document.getElementById('step2'), {
+        attributes: true,
+        attributeFilter: ['style']
+      });

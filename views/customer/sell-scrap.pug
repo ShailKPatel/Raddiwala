@@ -1,0 +1,431 @@
+doctype html
+html(lang="en")
+  head
+    meta(charset="UTF-8")
+    meta(name="viewport", content="width=device-width, initial-scale=1.0")
+    title Sell Scrap - RaddiWala
+    link(rel="stylesheet", href="/css/style.css")
+    link(rel="stylesheet", href="/css/dashboard.css")
+    link(rel="stylesheet", href="/css/forms.css")
+    link(href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css", rel="stylesheet")
+  body
+    // Navigation Bar
+    nav.navbar
+      .nav-container
+        .nav-logo
+          img(src="/logo.png", alt="RaddiWala Logo", onclick="window.location.href='/'")
+          span RaddiWala
+        .nav-menu
+          a.nav-link.active(href="/customer/sell-scrap") Sell Scrap
+          a.nav-link(href="/customer/pending-pickups") My Requests
+          a.nav-link(href="/customer/completed-pickups") History
+          a.nav-link(href="/customer/profile") Profile
+          .nav-user
+            a.nav-link(href="#", onclick="confirmLogout()") Logout
+
+    // Main Content
+    main.dashboard-content
+      .container
+        .page-header
+          h1 Create Pickup Request
+          p Upload photos of your scrap and provide details for pickup
+
+        .form-container
+          form#sellScrapForm.pickup-form(enctype="multipart/form-data")
+            // Photo Upload Section
+            .form-section
+              h2 Upload Photos
+              p.section-description Upload clear photos of your scrap materials
+              .upload-instructions
+                i.fas.fa-info-circle
+                span Hold Ctrl/Cmd to select multiple photos at once (Maximum 5 photos, 5MB each)
+              
+              .photo-upload-area
+                input#photos(type="file", name="photos", multiple, accept="image/*", onchange="handlePhotoUpload()")
+                .upload-placeholder#uploadPlaceholder
+                  i.fas.fa-camera
+                  p Click to upload photos or drag and drop
+                  span Maximum 5 photos, 5MB each
+                
+                .photo-preview#photoPreview
+
+            // Scrap Details Section
+            .form-section
+              h2 Scrap Details
+              
+              .form-group
+                label Scrap Types * (Select all that apply)
+                .checkbox-grid
+                  .checkbox-item
+                    input#paper(type="checkbox", name="wasteTypes", value="Paper")
+                    label(for="paper") Paper
+                  .checkbox-item
+                    input#cardboard(type="checkbox", name="wasteTypes", value="Cardboard")
+                    label(for="cardboard") Cardboard
+                  .checkbox-item
+                    input#glass(type="checkbox", name="wasteTypes", value="Glass")
+                    label(for="glass") Glass
+                  .checkbox-item
+                    input#plastic-bottles(type="checkbox", name="wasteTypes", value="Plastic Bottles & Containers")
+                    label(for="plastic-bottles") Plastic Bottles & Containers
+                  .checkbox-item
+                    input#plastic-bags(type="checkbox", name="wasteTypes", value="Plastic Bags & Wraps")
+                    label(for="plastic-bags") Plastic Bags & Wraps
+                  .checkbox-item
+                    input#metal-cans(type="checkbox", name="wasteTypes", value="Metal Cans")
+                    label(for="metal-cans") Metal Cans
+                  .checkbox-item
+                    input#other-metal(type="checkbox", name="wasteTypes", value="Other Metal Items")
+                    label(for="other-metal") Other Metal Items
+                  .checkbox-item
+                    input#wood(type="checkbox", name="wasteTypes", value="Wood")
+                    label(for="wood") Wood
+                  .checkbox-item
+                    input#textiles(type="checkbox", name="wasteTypes", value="Textiles & Clothes")
+                    label(for="textiles") Textiles & Clothes
+                  .checkbox-item
+                    input#shoes(type="checkbox", name="wasteTypes", value="Shoes & Leather")
+                    label(for="shoes") Shoes & Leather
+                  .checkbox-item
+                    input#electronics(type="checkbox", name="wasteTypes", value="Electronics")
+                    label(for="electronics") Electronics
+                  .checkbox-item
+                    input#batteries(type="checkbox", name="wasteTypes", value="Batteries")
+                    label(for="batteries") Batteries
+                  .checkbox-item
+                    input#rubber(type="checkbox", name="wasteTypes", value="Rubber")
+                    label(for="rubber") Rubber
+                  .checkbox-item
+                    input#building(type="checkbox", name="wasteTypes", value="Building Materials")
+                    label(for="building") Building Materials
+                  .checkbox-item
+                    input#organic(type="checkbox", name="wasteTypes", value="Organic Waste")
+                    label(for="organic") Organic Waste
+                  .checkbox-item
+                    input#other(type="checkbox", name="wasteTypes", value="Other")
+                    label(for="other") Other
+                .error-message#wasteTypeError
+
+                .form-group
+                  label(for="weightCategory") Approximate Weight *
+                  select#weightCategory(name="weightCategory", required)
+                    option(value="") Select weight range
+                    option(value="0–2 kg") 0–2 kg
+                    option(value="2–5 kg") 2–5 kg
+                    option(value="5–10 kg") 5–10 kg
+                    option(value="10–20 kg") 10–20 kg
+                    option(value="20–30 kg") 20–30 kg
+                    option(value="30–50 kg") 30–50 kg
+                    option(value="50+ kg") 50+ kg
+                  .error-message#weightCategoryError
+
+              .form-group
+                label(for="description") Description
+                textarea#description(name="description", rows="4", placeholder="Describe your scrap materials, preferred pickup time, any special instructions...")
+                .error-message#descriptionError
+
+            // Address Section
+            .form-section
+              h2 Pickup Address
+              
+              .form-group
+                label(for="addressId") Select Address *
+                select#addressId(name="addressId", required)
+                  option(value="") Loading addresses...
+                .error-message#addressIdError
+                
+                .address-actions
+                  button.btn.btn-secondary(type="button", onclick="showAddAddressModal()") Add New Address
+
+              .form-group
+                label(for="timeWindow") Preferred Time Window
+                input#timeWindow(type="text", name="timeWindow", placeholder="e.g., Morning 9-12 PM, Evening after 6 PM")
+                .error-message#timeWindowError
+
+            // Submit Section
+            .form-actions
+              button.btn.btn-secondary(type="button", onclick="window.location.href='/customer/dashboard'") Cancel
+              button.btn.btn-primary(type="submit") Create Pickup Request
+
+    // Add Address Modal
+    .modal#addAddressModal
+      .modal-content
+        .modal-header
+          h3 Add New Address
+          button.modal-close(onclick="hideAddAddressModal()") &times;
+        
+        form#addAddressForm
+          .form-group
+            label(for="newAddressLine") Address Line *
+            input#newAddressLine(type="text", required, placeholder="House/Shop number, Street name")
+          
+          .form-group
+            label(for="newAddressArea") Area *
+            input#newAddressArea(type="text", required, placeholder="Area/Locality")
+          
+          .form-row
+            .form-group
+              label(for="newAddressCity") City *
+              input#newAddressCity(type="text", required, placeholder="City")
+            
+            .form-group
+              label(for="newAddressPincode") Pincode *
+              input#newAddressPincode(type="text", required, maxlength="6", placeholder="6-digit pincode")
+          
+          .form-group
+            label(for="newAddressLandmark") Landmark
+            input#newAddressLandmark(type="text", placeholder="Nearby landmark")
+          
+          .modal-actions
+            button.btn.btn-secondary(type="button", onclick="hideAddAddressModal()") Cancel
+            button.btn.btn-primary(type="submit") Add Address
+
+    script(src="/js/main.js")
+    script.
+      function confirmLogout() {
+        if (confirm('Are you sure you want to logout?')) {
+          window.location.href = '/logout';
+        }
+      }
+    script.
+      let selectedPhotos = [];
+      let userAddresses = [];
+
+      // Load user addresses
+      async function loadAddresses() {
+        try {
+          const response = await RaddiWala.apiCall('/customers/profile');
+          userAddresses = response.addresses || [];
+          
+          const addressSelect = document.getElementById('addressId');
+          addressSelect.innerHTML = '<option value="">Select pickup address</option>';
+          
+          userAddresses.forEach(address => {
+            const option = document.createElement('option');
+            option.value = address._id;
+            option.textContent = `${address.line}, ${address.area}, ${address.city} - ${address.pincode}`;
+            addressSelect.appendChild(option);
+          });
+          
+          if (userAddresses.length === 0) {
+            addressSelect.innerHTML = '<option value="">No addresses found. Please add an address first.</option>';
+          }
+        } catch (error) {
+          console.error('Failed to load addresses:', error);
+          RaddiWala.showNotification('Failed to load addresses', 'error');
+        }
+      }
+
+      // Handle photo upload
+      function handlePhotoUpload() {
+        const input = document.getElementById('photos');
+        const files = Array.from(input.files);
+        
+        if (files.length > 5) {
+          RaddiWala.showNotification('Maximum 5 photos allowed', 'error');
+          input.value = '';
+          return;
+        }
+        
+        selectedPhotos = [];
+        const previewContainer = document.getElementById('photoPreview');
+        previewContainer.innerHTML = '';
+        
+        files.forEach((file, index) => {
+          try {
+            RaddiWala.validateImageFile(file);
+            selectedPhotos.push(file);
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+              const photoDiv = document.createElement('div');
+              photoDiv.className = 'photo-item';
+              photoDiv.innerHTML = `
+                <img src="${e.target.result}" alt="Preview ${index + 1}">
+                <button type="button" class="remove-photo" onclick="removePhoto(${index})">
+                  <i class="fas fa-times"></i>
+                </button>
+              `;
+              previewContainer.appendChild(photoDiv);
+            };
+            reader.readAsDataURL(file);
+          } catch (error) {
+            RaddiWala.showNotification(error.message, 'error');
+          }
+        });
+        
+        // Update placeholder visibility
+        const placeholder = document.getElementById('uploadPlaceholder');
+        placeholder.style.display = selectedPhotos.length > 0 ? 'none' : 'flex';
+      }
+
+      function removePhoto(index) {
+        selectedPhotos.splice(index, 1);
+        
+        // Update file input
+        const input = document.getElementById('photos');
+        const dt = new DataTransfer();
+        selectedPhotos.forEach(file => dt.items.add(file));
+        input.files = dt.files;
+        
+        // Re-render preview
+        handlePhotoUpload();
+      }
+
+      // Form submission
+      document.getElementById('sellScrapForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData();
+        const submitBtn = e.target.querySelector('button[type="submit"]');
+        
+        // Clear previous errors
+        clearErrors();
+        
+        // Validate form
+        if (!validateForm()) {
+          return;
+        }
+        
+        // Add form data - collect selected waste types
+        const selectedWasteTypes = [];
+        document.querySelectorAll('input[name="wasteTypes"]:checked').forEach(checkbox => {
+          selectedWasteTypes.push(checkbox.value);
+        });
+        formData.append('wasteTypes', JSON.stringify(selectedWasteTypes));
+        formData.append('weightCategory', document.getElementById('weightCategory').value);
+        formData.append('description', document.getElementById('description').value);
+        formData.append('addressId', document.getElementById('addressId').value);
+        formData.append('timeWindow', document.getElementById('timeWindow').value);
+        
+        // Add photos
+        selectedPhotos.forEach(photo => {
+          formData.append('photos', photo);
+        });
+        
+        try {
+          RaddiWala.showLoading(submitBtn);
+          
+          const response = await fetch('/api/pickup-requests', {
+            method: 'POST',
+            body: formData,
+            credentials: 'include'
+          });
+          
+          const result = await response.json();
+          
+          if (!response.ok) {
+            throw new Error(result.message);
+          }
+          
+          RaddiWala.showNotification('Pickup request created successfully!', 'success');
+          
+          setTimeout(() => {
+            window.location.href = '/customer/pending-pickups';
+          }, 1500);
+          
+        } catch (error) {
+          RaddiWala.showNotification(error.message, 'error');
+        } finally {
+          RaddiWala.hideLoading(submitBtn, 'Create Pickup Request');
+        }
+      });
+
+      function validateForm() {
+        let isValid = true;
+        
+        if (selectedPhotos.length === 0) {
+          RaddiWala.showNotification('Please upload at least one photo', 'error');
+          isValid = false;
+        }
+        
+        const selectedWasteTypes = document.querySelectorAll('input[name="wasteTypes"]:checked');
+        if (selectedWasteTypes.length === 0) {
+          showError('wasteTypeError', 'Please select at least one scrap type');
+          isValid = false;
+        }
+        
+        if (!document.getElementById('weightCategory').value) {
+          showError('weightCategoryError', 'Please select weight category');
+          isValid = false;
+        }
+        
+        if (!document.getElementById('addressId').value) {
+          showError('addressIdError', 'Please select pickup address');
+          isValid = false;
+        }
+        
+        return isValid;
+      }
+
+      // Address modal functions
+      function showAddAddressModal() {
+        document.getElementById('addAddressModal').style.display = 'flex';
+      }
+
+      function hideAddAddressModal() {
+        document.getElementById('addAddressModal').style.display = 'none';
+        document.getElementById('addAddressForm').reset();
+      }
+
+      // Add address form submission
+      document.getElementById('addAddressForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const formData = {
+          line: document.getElementById('newAddressLine').value,
+          area: document.getElementById('newAddressArea').value,
+          city: document.getElementById('newAddressCity').value,
+          pincode: document.getElementById('newAddressPincode').value,
+          landmark: document.getElementById('newAddressLandmark').value
+        };
+        
+        try {
+          await RaddiWala.apiCall('/customers/addresses', {
+            method: 'POST',
+            body: JSON.stringify(formData)
+          });
+          
+          RaddiWala.showNotification('Address added successfully!', 'success');
+          hideAddAddressModal();
+          loadAddresses(); // Reload addresses
+          
+        } catch (error) {
+          RaddiWala.showNotification(error.message, 'error');
+        }
+      });
+
+      function showError(elementId, message) {
+        document.getElementById(elementId).textContent = message;
+      }
+
+      function clearErrors() {
+        const errorElements = document.querySelectorAll('.error-message');
+        errorElements.forEach(el => el.textContent = '');
+      }
+
+      // Load addresses when page loads
+      document.addEventListener('DOMContentLoaded', function() {
+        loadAddresses();
+
+        // Initialize photo upload
+        const photoInput = document.getElementById('photos');
+        photoInput.addEventListener('change', handlePhotoUpload);
+
+        // Make checkbox items clickable
+        document.querySelectorAll('.checkbox-item').forEach(item => {
+          item.addEventListener('click', function(e) {
+            // Don't trigger if clicking directly on checkbox or label
+            if (e.target.type === 'checkbox' || e.target.tagName === 'LABEL') {
+              return;
+            }
+
+            const checkbox = this.querySelector('input[type="checkbox"]');
+            if (checkbox) {
+              checkbox.checked = !checkbox.checked;
+              // Trigger change event for validation
+              checkbox.dispatchEvent(new Event('change'));
+            }
+          });
+        });
+      });

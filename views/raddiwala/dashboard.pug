@@ -1,0 +1,272 @@
+doctype html
+html(lang="en")
+  head
+    meta(charset="UTF-8")
+    meta(name="viewport", content="width=device-width, initial-scale=1.0")
+    title Raddiwala Dashboard - RaddiWala
+    link(rel="stylesheet", href="/css/style.css")
+    link(rel="stylesheet", href="/css/dashboard.css")
+    link(href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css", rel="stylesheet")
+  body
+    // Navigation Bar
+    nav.navbar
+      .nav-container
+        .nav-logo
+          img(src="/logo.png", alt="RaddiWala Logo", onclick="window.location.href='/'")
+          span RaddiWala
+        .nav-menu
+          a.nav-link(href="/raddiwala/ongoing-requests") Browse Requests
+          a.nav-link(href="/raddiwala/pending-pickups") My Pickups
+          a.nav-link(href="/raddiwala/completed-pickups") History
+          a.nav-link(href="/raddiwala/subscription") Premium
+          a.nav-link(href="/raddiwala/profile") Profile
+          .nav-user
+            a.nav-link(href="#", onclick="confirmLogout()") Logout
+
+    // Main Content
+    main.dashboard-content
+      .container
+        .dashboard-header
+          h1 Raddiwala Dashboard
+          p Welcome back, #{user.name}! Ready to collect some scrap?
+
+        // Quick Stats
+        .stats-grid
+          .stat-card
+            .stat-icon
+              i.fas.fa-gavel
+            .stat-info
+              h3#totalBids 0
+              p Total Bids Placed
+          .stat-card
+            .stat-icon
+              i.fas.fa-handshake
+            .stat-info
+              h3#acceptedBids 0
+              p Accepted Bids
+          .stat-card
+            .stat-icon
+              i.fas.fa-check-circle
+            .stat-info
+              h3#completedPickups 0
+              p Completed Pickups
+          .stat-card
+            .stat-icon
+              i.fas.fa-rupee-sign
+            .stat-info
+              h3#totalEarnings ₹0
+              p Total Earnings
+
+        // Monthly Pickup Status
+        .pickup-status#pickupStatus
+          // Will be populated by JavaScript
+
+        // Quick Actions
+        .quick-actions
+          h2 Quick Actions
+          .action-grid
+            .action-card(onclick="window.location.href='/raddiwala/ongoing-requests'")
+              .action-icon
+                i.fas.fa-search
+              h3 View Ongoing Requests
+              p Browse and bid on pickup requests in your area
+
+            .action-card(onclick="window.location.href='/raddiwala/pending-pickups'")
+              .action-icon
+                i.fas.fa-clock
+              h3 View Pending Pickups
+              p Manage your accepted bids and complete pickups
+
+            .action-card(onclick="window.location.href='/raddiwala/completed-pickups'")
+              .action-icon
+                i.fas.fa-history
+              h3 View Completed Pickups
+              p Review your completed transactions and rate customers
+
+            .action-card(onclick="window.location.href='/raddiwala/subscription'")
+              .action-icon
+                i.fas.fa-crown
+              h3 Manage Subscription
+              p View subscription status and upgrade to premium
+
+        // Recent Activity
+        .recent-activity
+          h2 Recent Activity
+          .activity-container#recentActivity
+            .loading-spinner
+              i.fas.fa-spinner.fa-spin
+              span Loading recent activity...
+
+    script(src="/js/main.js")
+    script.
+      function confirmLogout() {
+        if (confirm('Are you sure you want to logout?')) {
+          window.location.href = '/logout';
+        }
+      }
+    script.
+      // Load dashboard data
+      async function loadDashboardData() {
+        try {
+          // Load stats
+          const [bids, transactions, subscriptionStatus] = await Promise.all([
+            RaddiWala.apiCall('/raddiwalas/bids'),
+            RaddiWala.apiCall('/raddiwalas/completed-transactions'),
+            RaddiWala.apiCall('/subscriptions/status')
+          ]);
+
+          // Update stats
+          document.getElementById('totalBids').textContent = bids.length;
+          document.getElementById('acceptedBids').textContent = 
+            bids.filter(b => b.isAccepted).length;
+          document.getElementById('completedPickups').textContent = transactions.length;
+          
+          const totalEarnings = transactions.reduce((sum, t) => sum + t.totalAmount, 0);
+          document.getElementById('totalEarnings').textContent = 
+            RaddiWala.formatCurrency(totalEarnings);
+
+          // Update pickup status
+          updatePickupStatus(subscriptionStatus);
+
+          // Load recent activity
+          loadRecentActivity(bids, transactions);
+
+        } catch (error) {
+          console.error('Failed to load dashboard data:', error);
+          RaddiWala.showNotification('Failed to load dashboard data', 'error');
+        }
+      }
+
+      function updatePickupStatus(status) {
+        const statusContainer = document.getElementById('pickupStatus');
+        const { monthlyPickups, canPlaceBids, isPremium, needsPremium } = status;
+        
+        let statusHTML = `
+          <div class="pickup-status-card">
+            <h3>Monthly Pickup Status</h3>
+            <div class="pickup-counter">
+              <div class="counter-display">
+                <span class="counter-number">${monthlyPickups}</span>
+                <span class="counter-label">Pickups This Month</span>
+              </div>
+              <div class="counter-limit">
+                <span>Free Limit: 50 pickups</span>
+              </div>
+            </div>
+        `;
+
+        if (isPremium) {
+          statusHTML += `
+            <div class="status-message premium">
+              <i class="fas fa-crown"></i>
+              <span>Premium Member - Unlimited Pickups</span>
+            </div>
+          `;
+        } else if (needsPremium) {
+          statusHTML += `
+            <div class="status-message warning">
+              <i class="fas fa-exclamation-triangle"></i>
+              <span>Free limit reached! Upgrade to premium for unlimited pickups.</span>
+            </div>
+            <div class="status-actions">
+              <a href="/raddiwala/subscription" class="btn btn-primary">Upgrade to Premium</a>
+            </div>
+          `;
+        } else {
+          const remaining = 50 - monthlyPickups;
+          statusHTML += `
+            <div class="status-message info">
+              <i class="fas fa-info-circle"></i>
+              <span>${remaining} free pickups remaining this month</span>
+            </div>
+          `;
+        }
+
+        statusHTML += '</div>';
+        statusContainer.innerHTML = statusHTML;
+      }
+
+      function loadRecentActivity(bids, transactions) {
+        const activityContainer = document.getElementById('recentActivity');
+        
+        // Combine and sort recent items
+        const recentItems = [];
+        
+        // Add recent bids
+        bids.slice(0, 3).forEach(bid => {
+          recentItems.push({
+            type: 'bid',
+            date: new Date(bid.createdAt),
+            data: bid
+          });
+        });
+
+        // Add recent transactions
+        transactions.slice(0, 3).forEach(transaction => {
+          recentItems.push({
+            type: 'transaction',
+            date: new Date(transaction.completedAt),
+            data: transaction
+          });
+        });
+
+        // Sort by date
+        recentItems.sort((a, b) => b.date - a.date);
+
+        if (recentItems.length === 0) {
+          activityContainer.innerHTML = `
+            <div class="no-activity">
+              <i class="fas fa-info-circle"></i>
+              <p>No recent activity. Start by browsing ongoing pickup requests!</p>
+              <a href="/raddiwala/ongoing-requests" class="btn btn-primary">Browse Requests</a>
+            </div>
+          `;
+          return;
+        }
+
+        // Render recent items
+        const activityHTML = recentItems.slice(0, 5).map(item => {
+          if (item.type === 'bid') {
+            const status = item.data.isAccepted ? 'accepted' : 'pending';
+            return `
+              <div class="activity-item">
+                <div class="activity-icon bid">
+                  <i class="fas fa-gavel"></i>
+                </div>
+                <div class="activity-content">
+                  <h4>Bid Placed</h4>
+                  <p>₹${item.data.itemRates[0]?.pricePerKg || 0}/kg - ${item.data.proposedPickupTime}</p>
+                  <span class="activity-date">${RaddiWala.formatDate(item.date)}</span>
+                </div>
+                <div class="activity-status status-${status}">
+                  ${status.charAt(0).toUpperCase() + status.slice(1)}
+                </div>
+              </div>
+            `;
+          } else {
+            return `
+              <div class="activity-item">
+                <div class="activity-icon transaction">
+                  <i class="fas fa-check-circle"></i>
+                </div>
+                <div class="activity-content">
+                  <h4>Pickup Completed</h4>
+                  <p>Amount: ${RaddiWala.formatCurrency(item.data.totalAmount)}</p>
+                  <span class="activity-date">${RaddiWala.formatDate(item.date)}</span>
+                </div>
+                <div class="activity-rating">
+                  ${item.data.raddiwalaRating.rating ? 
+                    `<div class="rating">${'★'.repeat(item.data.raddiwalaRating.rating)}${'☆'.repeat(5-item.data.raddiwalaRating.rating)}</div>` : 
+                    '<span class="no-rating">Not rated</span>'
+                  }
+                </div>
+              </div>
+            `;
+          }
+        }).join('');
+
+        activityContainer.innerHTML = activityHTML;
+      }
+
+      // Load data when page loads
+      document.addEventListener('DOMContentLoaded', loadDashboardData);

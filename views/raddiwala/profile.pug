@@ -1,0 +1,539 @@
+doctype html
+html(lang="en")
+  head
+    meta(charset="UTF-8")
+    meta(name="viewport", content="width=device-width, initial-scale=1.0")
+    title Profile - RaddiWala
+    link(rel="stylesheet", href="/css/style.css")
+    link(rel="stylesheet", href="/css/dashboard.css")
+    link(rel="stylesheet", href="/css/forms.css")
+    link(href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css", rel="stylesheet")
+  body
+    // Navigation Bar
+    nav.navbar
+      .nav-container
+        .nav-logo
+          img(src="/logo.png", alt="RaddiWala Logo", onclick="window.location.href='/'")
+          span RaddiWala
+        .nav-menu
+          a.nav-link(href="/raddiwala/ongoing-requests") Browse Requests
+          a.nav-link(href="/raddiwala/pending-pickups") My Pickups
+          a.nav-link(href="/raddiwala/completed-pickups") History
+          a.nav-link(href="/raddiwala/subscription") Premium
+          a.nav-link.active(href="/raddiwala/profile") Profile
+          .nav-user
+            a.nav-link(href="/logout") Logout
+
+    // Main Content
+    main.dashboard-content
+      .container
+        .page-header
+          h1 Profile Management
+          p Update your profile information and shop address
+
+        .profile-container
+          // Profile Overview
+          .profile-overview
+            .profile-card
+              .profile-header
+                .profile-avatar
+                  img#profileImage(src="/images/default-avatar.svg", alt="Profile Picture", style="display: none;")
+                  i#profileIcon.fas.fa-user-circle
+                  .avatar-upload
+                    input#profilePictureInput(type="file", accept="image/*", style="display: none;")
+                    button.btn.btn-sm.btn-secondary(onclick="document.getElementById('profilePictureInput').click()")
+                      i.fas.fa-camera
+                      span Change Photo
+                .profile-info
+                  .profile-name-section
+                    h2#profileName Loading...
+                    .premium-badge#premiumBadge(style="display: none;")
+                      i.fas.fa-crown
+                      span PREMIUM
+                  p#profileEmail Loading...
+                  .profile-rating
+                    span#profileRating
+                    span#profileReviews
+              
+              .profile-stats
+                .stat-item
+                  span.stat-value#monthlyPickups 0
+                  span.stat-label Monthly Pickups
+                .stat-item
+                  span.stat-value#totalEarnings ₹0
+                  span.stat-label Total Earnings
+                .stat-item
+                  span.stat-value#subscriptionStatus Free
+                  span.stat-label Plan Status
+
+          // Profile Forms
+          .profile-forms
+            // Basic Information
+            .form-section
+              h3 Basic Information
+              form#profileForm
+                .form-row
+                  .form-group
+                    label(for="name") Full Name *
+                    input#name(type="text", required)
+                    .error-message#nameError
+
+                  .form-group
+                    label(for="phone") Phone Number *
+                    input#phone(type="tel", required)
+                    .error-message#phoneError
+
+                .form-actions
+                  button.btn.btn-primary(type="submit") Update Profile
+
+            // Shop Address
+            .form-section
+              h3 Shop Address</h3>
+              form#addressForm
+                .form-row
+                  .form-group
+                    label(for="addressLine") Address Line *
+                    input#addressLine(type="text", required)
+                    .error-message#addressLineError
+
+                  .form-group
+                    label(for="addressArea") Area *
+                    input#addressArea(type="text", required)
+                    .error-message#addressAreaError
+
+                .form-row
+                  .form-group
+                    label(for="addressCity") City *
+                    input#addressCity(type="text", required)
+                    .error-message#addressCityError
+
+                  .form-group
+                    label(for="addressPincode") Pincode *
+                    input#addressPincode(type="text", maxlength="6", required)
+                    .error-message#addressPincodeError
+
+                .form-group
+                  label(for="addressLandmark") Landmark (Optional)
+                  input#addressLandmark(type="text")
+
+                .form-actions
+                  button.btn.btn-primary(type="submit") Update Address
+
+            // Email Change
+            .form-section
+              h3 Change Email</h3>
+              form#emailForm
+                .form-group
+                  label(for="newEmail") New Email Address *
+                  input#newEmail(type="email", required)
+                  .error-message#newEmailError
+
+                .form-group#otpGroup(style="display: none;")
+                  label(for="emailOtp") Enter OTP *
+                  input#emailOtp(type="text", maxlength="4")
+                  .error-message#emailOtpError
+                  
+                  .development-mode#emailDevMode(style="display: none;")
+                    p.dev-notice Development Mode - OTP: 
+                      span#emailDevOTP
+
+                .form-actions
+                  button.btn.btn-primary#emailSubmitBtn(type="submit") Send OTP
+
+            // Danger Zone
+            .form-section.danger-zone
+              h3 Danger Zone</h3>
+              .danger-content
+                .danger-item
+                  .danger-info
+                    h4 Delete Account
+                    p This action cannot be undone. All your data will be permanently deleted.
+                  button.btn.btn-danger(onclick="showDeleteConfirmation()") Delete Account
+
+    // Delete Confirmation Modal
+    .modal#deleteModal
+      .modal-content
+        .modal-header
+          h3 Delete Account
+          button.modal-close(onclick="hideDeleteModal()") &times;
+        
+        .delete-warning
+          .warning-icon
+            i.fas.fa-exclamation-triangle
+          .warning-text
+            h4 Are you absolutely sure?
+            p This action <strong>cannot be undone</strong>. This will permanently delete your account and remove all your data from our servers.
+            p Type <strong>DELETE</strong> to confirm:
+            input#deleteConfirmation(type="text", placeholder="Type DELETE to confirm")
+        
+        .modal-actions
+          button.btn.btn-secondary(onclick="hideDeleteModal()") Cancel
+          button.btn.btn-danger#deleteConfirmBtn(onclick="confirmDelete()" disabled) Delete Account
+
+    script(src="/js/main.js")
+    script.
+      let profileData = null;
+      let emailOtpSent = false;
+
+      // Load profile data
+      async function loadProfileData() {
+        try {
+          const [profile, subscriptionStatus] = await Promise.all([
+            RaddiWala.apiCall('/raddiwalas/profile'),
+            RaddiWala.apiCall('/subscriptions/status')
+          ]);
+
+          profileData = profile;
+          populateProfileData(profile, subscriptionStatus);
+        } catch (error) {
+          console.error('Failed to load profile data:', error);
+          RaddiWala.showNotification('Failed to load profile data', 'error');
+        }
+      }
+
+      function populateProfileData(profile, subscriptionStatus) {
+        // Profile overview
+        document.getElementById('profileName').textContent = profile.name;
+        document.getElementById('profileEmail').textContent = profile.email;
+
+        // Profile picture
+        const profileImage = document.getElementById('profileImage');
+        const profileIcon = document.getElementById('profileIcon');
+
+        if (profile.profilePicture) {
+          profileImage.src = profile.profilePicture;
+          profileImage.style.display = 'block';
+          profileIcon.style.display = 'none';
+        } else {
+          profileImage.style.display = 'none';
+          profileIcon.style.display = 'block';
+        }
+        
+        const ratingElement = document.getElementById('profileRating');
+        const reviewsElement = document.getElementById('profileReviews');
+        
+        if (profile.ratings.totalRatings > 0) {
+          ratingElement.innerHTML = createStarRating(profile.ratings.avgRating);
+          reviewsElement.textContent = `(${profile.ratings.totalRatings} reviews)`;
+        } else {
+          ratingElement.textContent = 'No ratings yet';
+          reviewsElement.textContent = '';
+        }
+
+        document.getElementById('monthlyPickups').textContent = profile.monthlyPickupsCount;
+        document.getElementById('subscriptionStatus').textContent =
+          subscriptionStatus.isPremium ? 'Premium' : 'Free';
+
+        // Show premium badge if user has premium
+        const premiumBadge = document.getElementById('premiumBadge');
+        if (subscriptionStatus.isPremium) {
+          premiumBadge.style.display = 'flex';
+        } else {
+          premiumBadge.style.display = 'none';
+        }
+
+        // Basic information form
+        document.getElementById('name').value = profile.name;
+        document.getElementById('phone').value = profile.phone;
+
+        // Shop address form
+        if (profile.shopAddress) {
+          document.getElementById('addressLine').value = profile.shopAddress.line;
+          document.getElementById('addressArea').value = profile.shopAddress.area;
+          document.getElementById('addressCity').value = profile.shopAddress.city;
+          document.getElementById('addressPincode').value = profile.shopAddress.pincode;
+          document.getElementById('addressLandmark').value = profile.shopAddress.landmark || '';
+        }
+      }
+
+      function createStarRating(rating) {
+        const fullStars = Math.floor(rating);
+        const hasHalfStar = rating % 1 >= 0.5;
+        let stars = '';
+        
+        for (let i = 0; i < fullStars; i++) {
+          stars += '★';
+        }
+        if (hasHalfStar) {
+          stars += '☆';
+        }
+        for (let i = fullStars + (hasHalfStar ? 1 : 0); i < 5; i++) {
+          stars += '☆';
+        }
+        
+        return `<span class="rating">${stars}</span>`;
+      }
+
+      // Profile form submission
+      document.getElementById('profileForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const formData = {
+          name: document.getElementById('name').value,
+          phone: document.getElementById('phone').value
+        };
+
+        const submitBtn = e.target.querySelector('button[type="submit"]');
+        clearErrors();
+
+        if (!validateProfileForm(formData)) {
+          return;
+        }
+
+        try {
+          RaddiWala.showLoading(submitBtn);
+          
+          await RaddiWala.apiCall('/raddiwalas/profile', {
+            method: 'PUT',
+            body: JSON.stringify(formData)
+          });
+          
+          RaddiWala.showNotification('Profile updated successfully!', 'success');
+          loadProfileData(); // Reload data
+          
+        } catch (error) {
+          RaddiWala.showNotification(error.message, 'error');
+        } finally {
+          RaddiWala.hideLoading(submitBtn, 'Update Profile');
+        }
+      });
+
+      // Address form submission
+      document.getElementById('addressForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const formData = {
+          line: document.getElementById('addressLine').value,
+          area: document.getElementById('addressArea').value,
+          city: document.getElementById('addressCity').value,
+          pincode: document.getElementById('addressPincode').value,
+          landmark: document.getElementById('addressLandmark').value
+        };
+
+        const submitBtn = e.target.querySelector('button[type="submit"]');
+        clearErrors();
+
+        if (!validateAddressForm(formData)) {
+          return;
+        }
+
+        try {
+          RaddiWala.showLoading(submitBtn);
+          
+          await RaddiWala.apiCall('/raddiwalas/shop-address', {
+            method: 'PUT',
+            body: JSON.stringify(formData)
+          });
+          
+          RaddiWala.showNotification('Shop address updated successfully!', 'success');
+          
+        } catch (error) {
+          RaddiWala.showNotification(error.message, 'error');
+        } finally {
+          RaddiWala.hideLoading(submitBtn, 'Update Address');
+        }
+      });
+
+      // Email form submission
+      document.getElementById('emailForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const newEmail = document.getElementById('newEmail').value;
+        const otp = document.getElementById('emailOtp').value;
+        const submitBtn = document.getElementById('emailSubmitBtn');
+        
+        clearErrors();
+
+        if (!emailOtpSent) {
+          // Send OTP
+          if (!RaddiWala.validateEmail(newEmail)) {
+            showError('newEmailError', 'Please enter a valid email address');
+            return;
+          }
+
+          try {
+            RaddiWala.showLoading(submitBtn);
+            
+            const response = await RaddiWala.sendOTP(newEmail, 'email_change', 'raddiwala');
+            
+            emailOtpSent = true;
+            document.getElementById('otpGroup').style.display = 'block';
+            submitBtn.textContent = 'Change Email';
+            
+            // Show development OTP if available
+            if (response.developmentOTP) {
+              document.getElementById('emailDevOTP').textContent = response.developmentOTP;
+              document.getElementById('emailDevMode').style.display = 'block';
+            }
+            
+            RaddiWala.showNotification('OTP sent to new email address!', 'success');
+            
+          } catch (error) {
+            RaddiWala.showNotification(error.message, 'error');
+          } finally {
+            RaddiWala.hideLoading(submitBtn, 'Verify & Change Email');
+          }
+        } else {
+          // Verify OTP and change email
+          if (!otp || !RaddiWala.validateOTP(otp)) {
+            showError('emailOtpError', 'Please enter a valid 4-digit OTP');
+            return;
+          }
+
+          try {
+            RaddiWala.showLoading(submitBtn);
+            
+            // This would need a separate API endpoint for email change
+            RaddiWala.showNotification('Email change functionality will be implemented in production', 'info');
+            
+            // Reset form
+            emailOtpSent = false;
+            document.getElementById('emailForm').reset();
+            document.getElementById('otpGroup').style.display = 'none';
+            document.getElementById('emailDevMode').style.display = 'none';
+            submitBtn.textContent = 'Send OTP';
+            
+          } catch (error) {
+            RaddiWala.showNotification(error.message, 'error');
+          } finally {
+            RaddiWala.hideLoading(submitBtn, 'Change Email');
+          }
+        }
+      });
+
+      // Delete confirmation
+      document.getElementById('deleteConfirmation').addEventListener('input', function() {
+        const confirmBtn = document.getElementById('deleteConfirmBtn');
+        confirmBtn.disabled = this.value !== 'DELETE';
+      });
+
+      function showDeleteConfirmation() {
+        document.getElementById('deleteModal').style.display = 'flex';
+      }
+
+      function hideDeleteModal() {
+        document.getElementById('deleteModal').style.display = 'none';
+        document.getElementById('deleteConfirmation').value = '';
+        document.getElementById('deleteConfirmBtn').disabled = true;
+      }
+
+      async function confirmDelete() {
+        try {
+          await RaddiWala.apiCall('/raddiwalas/account', {
+            method: 'DELETE'
+          });
+          
+          RaddiWala.showNotification('Account deleted successfully', 'success');
+          
+          setTimeout(() => {
+            window.location.href = '/';
+          }, 2000);
+          
+        } catch (error) {
+          RaddiWala.showNotification(error.message, 'error');
+        }
+      }
+
+      // Profile picture upload
+      document.getElementById('profilePictureInput').addEventListener('change', async function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        // Validate file
+        if (!file.type.startsWith('image/')) {
+          RaddiWala.showNotification('Please select an image file', 'error');
+          return;
+        }
+
+        if (file.size > 5 * 1024 * 1024) { // 5MB limit
+          RaddiWala.showNotification('Image size must be less than 5MB', 'error');
+          return;
+        }
+
+        try {
+          const formData = new FormData();
+          formData.append('profilePicture', file);
+
+          // Use fetch directly instead of RaddiWala.apiCall for file uploads
+          const response = await fetch('/api/raddiwalas/profile-picture', {
+            method: 'POST',
+            body: formData,
+            credentials: 'include'
+          });
+
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Upload failed');
+          }
+
+          const result = await response.json();
+
+          // Update profile image
+          const profileImage = document.getElementById('profileImage');
+          const profileIcon = document.getElementById('profileIcon');
+
+          profileImage.src = result.profilePictureUrl;
+          profileImage.style.display = 'block';
+          profileIcon.style.display = 'none';
+
+          RaddiWala.showNotification('Profile picture updated successfully!', 'success');
+        } catch (error) {
+          console.error('Profile picture upload error:', error);
+          RaddiWala.showNotification(error.message || 'Something went wrong', 'error');
+        }
+      });
+
+      // Validation functions
+      function validateProfileForm(formData) {
+        let isValid = true;
+        
+        if (!formData.name || formData.name.trim().length < 2) {
+          showError('nameError', 'Name must be at least 2 characters long');
+          isValid = false;
+        }
+        
+        if (!formData.phone || !RaddiWala.validatePhone(formData.phone)) {
+          showError('phoneError', 'Please enter a valid 10-digit mobile number');
+          isValid = false;
+        }
+        
+        return isValid;
+      }
+
+      function validateAddressForm(formData) {
+        let isValid = true;
+        
+        if (!formData.line.trim()) {
+          showError('addressLineError', 'Address line is required');
+          isValid = false;
+        }
+        
+        if (!formData.area.trim()) {
+          showError('addressAreaError', 'Area is required');
+          isValid = false;
+        }
+        
+        if (!formData.city.trim()) {
+          showError('addressCityError', 'City is required');
+          isValid = false;
+        }
+        
+        if (!formData.pincode || !/^[1-9][0-9]{5}$/.test(formData.pincode)) {
+          showError('addressPincodeError', 'Please enter a valid 6-digit pincode');
+          isValid = false;
+        }
+        
+        return isValid;
+      }
+
+      function showError(elementId, message) {
+        document.getElementById(elementId).textContent = message;
+      }
+
+      function clearErrors() {
+        const errorElements = document.querySelectorAll('.error-message');
+        errorElements.forEach(el => el.textContent = '');
+      }
+
+      // Load data when page loads
+      document.addEventListener('DOMContentLoaded', loadProfileData);
