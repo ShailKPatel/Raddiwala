@@ -1,0 +1,295 @@
+doctype html
+html(lang="en")
+  head
+    meta(charset="UTF-8")
+    meta(name="viewport", content="width=device-width, initial-scale=1.0")
+    title Page Not Found - RaddiWala
+    link(rel="stylesheet", href="/css/style.css")
+    link(rel="stylesheet", href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css")
+    
+  body.error-page
+    .error-container
+      .error-content
+        .error-icon
+          i.fas.fa-exclamation-triangle
+        
+        .error-details
+          h1.error-code 404
+          h2.error-title Page Not Found
+          p.error-message
+            | The page
+            strong= requestedPath || '/unknown'
+            |  doesn't exist or has been moved.
+
+          if userType
+            .user-type-hint
+              p
+                | Looking for
+                strong= userType === 'customer' ? 'Customer' : 'RaddiWala'
+                |  pages? Make sure you're logged in with the correct account type.
+          
+          .error-suggestions
+            h3 What you can do:
+            ul
+              li Check the URL for typos
+              li Go back to the previous page
+              li Visit our homepage
+              li Contact support if you think this is an error
+          
+          .error-actions
+            if userType === 'customer'
+              a.btn.btn-primary(href="/customer/dashboard")
+                i.fas.fa-tachometer-alt
+                span Customer Dashboard
+              a.btn.btn-secondary(href="/customer/request-pickup")
+                i.fas.fa-plus
+                span Request Pickup
+            else if userType === 'raddiwala'
+              a.btn.btn-primary(href="/raddiwala/dashboard")
+                i.fas.fa-tachometer-alt
+                span RaddiWala Dashboard
+              a.btn.btn-secondary(href="/raddiwala/ongoing-requests")
+                i.fas.fa-tasks
+                span View Requests
+            else
+              a.btn.btn-primary(href="/")
+                i.fas.fa-home
+                span Go to Homepage
+
+            button.btn.btn-outline(onclick="history.back()")
+              i.fas.fa-arrow-left
+              span Go Back
+      
+
+        
+
+
+    style.
+      .error-page {
+        min-height: 100vh;
+        background: linear-gradient(135deg, var(--forest-primary), var(--forest-secondary));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: 'Segoe UI', system-ui, sans-serif;
+        padding: 20px;
+      }
+
+      .error-container {
+        background: var(--white);
+        border-radius: var(--radius-lg);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        max-width: 500px;
+        width: 100%;
+        overflow: hidden;
+        text-align: center;
+      }
+
+      .error-content {
+        padding: 40px 30px 30px;
+      }
+
+      .error-icon {
+        margin-bottom: 20px;
+      }
+
+      .error-icon i {
+        font-size: 3rem;
+        color: #ff6b6b;
+        animation: pulse 2s infinite;
+      }
+
+      @keyframes pulse {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+        100% { transform: scale(1); }
+      }
+
+      .error-code {
+        font-size: 4rem;
+        font-weight: 800;
+        color: var(--forest-primary);
+        margin: 0;
+        line-height: 1;
+      }
+
+      .error-title {
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: var(--gray-900);
+        margin: 15px 0 10px;
+      }
+
+      .error-message {
+        font-size: 1rem;
+        color: var(--gray-600);
+        margin-bottom: 15px;
+        line-height: 1.5;
+      }
+
+      .user-type-hint {
+        background: var(--gray-50);
+        border: 1px solid var(--gray-200);
+        border-radius: var(--radius-md);
+        padding: 12px 16px;
+        margin-bottom: 25px;
+      }
+
+      .user-type-hint p {
+        margin: 0;
+        color: var(--forest-primary);
+        font-size: 0.9rem;
+        font-weight: 500;
+      }
+
+      .user-type-hint strong {
+        color: var(--forest-secondary);
+        font-weight: 600;
+      }
+
+      .error-suggestions {
+        text-align: left;
+        background: var(--gray-50);
+        padding: 20px;
+        border-radius: var(--radius-md);
+        margin-bottom: 30px;
+      }
+
+      .error-suggestions h3 {
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--gray-900);
+        margin: 0 0 12px;
+      }
+
+      .error-suggestions ul {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+      }
+
+      .error-suggestions li {
+        padding: 6px 0;
+        color: var(--gray-700);
+        position: relative;
+        padding-left: 20px;
+        font-size: 0.9rem;
+      }
+
+      .error-suggestions li::before {
+        content: '•';
+        color: var(--forest-primary);
+        font-weight: bold;
+        position: absolute;
+        left: 0;
+      }
+
+      .error-actions {
+        display: flex;
+        gap: 12px;
+        justify-content: center;
+        flex-wrap: wrap;
+      }
+
+      .error-actions .btn {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 10px 20px;
+        border-radius: var(--radius-md);
+        text-decoration: none;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        border: none;
+        cursor: pointer;
+        font-size: 0.9rem;
+      }
+
+      .error-actions .btn-primary {
+        background: linear-gradient(135deg, var(--forest-primary), var(--forest-secondary));
+        color: var(--white);
+        box-shadow: 0 4px 15px rgba(26, 77, 58, 0.3);
+      }
+
+      .error-actions .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(26, 77, 58, 0.4);
+      }
+
+      .error-actions .btn-secondary {
+        background: var(--gray-600);
+        color: var(--white);
+      }
+
+      .error-actions .btn-secondary:hover {
+        background: var(--gray-700);
+        transform: translateY(-2px);
+      }
+
+      .error-actions .btn-outline {
+        background: transparent;
+        color: var(--forest-primary);
+        border: 2px solid var(--forest-primary);
+      }
+
+      .error-actions .btn-outline:hover {
+        background: var(--forest-primary);
+        color: var(--white);
+        transform: translateY(-2px);
+      }
+
+      /* Responsive Design */
+      @media (max-width: 768px) {
+        .error-content {
+          padding: 30px 25px 25px;
+        }
+
+        .error-code {
+          font-size: 3rem;
+        }
+
+        .error-title {
+          font-size: 1.3rem;
+        }
+
+        .error-actions {
+          flex-direction: column;
+          align-items: center;
+          gap: 10px;
+        }
+
+        .error-actions .btn {
+          width: 100%;
+          max-width: 200px;
+        }
+
+        .error-suggestions {
+          padding: 16px;
+        }
+      }
+
+      @media (max-width: 480px) {
+        .error-page {
+          padding: 15px;
+        }
+
+        .error-content {
+          padding: 25px 20px 20px;
+        }
+
+        .error-code {
+          font-size: 2.5rem;
+        }
+
+        .error-title {
+          font-size: 1.2rem;
+        }
+
+        .error-suggestions {
+          padding: 12px;
+        }
+
+        .user-type-hint {
+          padding: 10px 12px;
+        }
+      }

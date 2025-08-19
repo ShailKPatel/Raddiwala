@@ -25,16 +25,17 @@ html(lang="en")
     // Main Content
     main.dashboard-content
       .container
-        .page-header
-          h1 Create Pickup Request
-          p Upload photos of your scrap and provide details for pickup
+        .hero
+          .hero-content
+            h1.hero-title Create Pickup Request
+            p.hero-description Upload photos of your scrap and provide details for pickup
 
-        .form-container
+        .card
           form#sellScrapForm.pickup-form(enctype="multipart/form-data")
             // Photo Upload Section
-            .form-section
-              h2 Upload Photos
-              p.section-description Upload clear photos of your scrap materials
+            .form-group
+              h3 Upload Photos
+              p Upload clear photos of your scrap materials
               .upload-instructions
                 i.fas.fa-info-circle
                 span Hold Ctrl/Cmd to select multiple photos at once (Maximum 5 photos, 5MB each)
@@ -124,21 +125,21 @@ html(lang="en")
                 .error-message#descriptionError
 
             // Address Section
-            .form-section
-              h2 Pickup Address
-              
+            .form-group
+              h3 Pickup Address
+
               .form-group
-                label(for="addressId") Select Address *
-                select#addressId(name="addressId", required)
+                label.form-label(for="addressId") Select Address *
+                select.form-input#addressId(name="addressId", required)
                   option(value="") Loading addresses...
                 .error-message#addressIdError
-                
-                .address-actions
+
+                .form-actions
                   button.btn.btn-secondary(type="button", onclick="showAddAddressModal()") Add New Address
 
               .form-group
-                label(for="timeWindow") Preferred Time Window
-                input#timeWindow(type="text", name="timeWindow", placeholder="e.g., Morning 9-12 PM, Evening after 6 PM")
+                label.form-label(for="timeWindow") Preferred Time Window
+                input.form-input#timeWindow(type="text", name="timeWindow", placeholder="e.g., Morning 9-12 PM, Evening after 6 PM")
                 .error-message#timeWindowError
 
             // Submit Section
@@ -147,37 +148,43 @@ html(lang="en")
               button.btn.btn-primary(type="submit") Create Pickup Request
 
     // Add Address Modal
-    .modal#addAddressModal
+    .modal#addAddressModal(style="display: none;")
       .modal-content
-        .modal-header
-          h3 Add New Address
-          button.modal-close(onclick="hideAddAddressModal()") &times;
-        
+        h3 Add New Address
+
         form#addAddressForm
           .form-group
-            label(for="newAddressLine") Address Line *
-            input#newAddressLine(type="text", required, placeholder="House/Shop number, Street name")
-          
+            label.form-label(for="newAddressLine") Address Line *
+            input.form-input#newAddressLine(type="text", required, placeholder="House/Shop number, Street name")
+
           .form-group
-            label(for="newAddressArea") Area *
-            input#newAddressArea(type="text", required, placeholder="Area/Locality")
-          
-          .form-row
-            .form-group
-              label(for="newAddressCity") City *
-              input#newAddressCity(type="text", required, placeholder="City")
-            
-            .form-group
-              label(for="newAddressPincode") Pincode *
-              input#newAddressPincode(type="text", required, maxlength="6", placeholder="6-digit pincode")
-          
+            label.form-label(for="newAddressArea") Area *
+            input.form-input#newAddressArea(type="text", required, placeholder="Area/Locality")
+
           .form-group
-            label(for="newAddressLandmark") Landmark
-            input#newAddressLandmark(type="text", placeholder="Nearby landmark")
-          
-          .modal-actions
-            button.btn.btn-secondary(type="button", onclick="hideAddAddressModal()") Cancel
+            label.form-label(for="newAddressCity") City *
+            input.form-input#newAddressCity(type="text", required, placeholder="City")
+
+          .form-group
+            label.form-label(for="newAddressPincode") Pincode *
+            input.form-input#newAddressPincode(type="text", required, maxlength="6", placeholder="6-digit pincode")
+
+          .form-group
+            label.form-label(for="newAddressLandmark") Landmark
+            input.form-input#newAddressLandmark(type="text", placeholder="Nearby landmark")
+
+          .form-actions
+            button.btn.btn-outline(type="button", onclick="hideAddAddressModal()") Cancel
             button.btn.btn-primary(type="submit") Add Address
+
+    // Footer
+    footer.footer
+      .container
+        .footer-bottom
+          p &copy; 2025 Shail K Patel &middot; Crafted out of boredom.
+          p
+            a(href="https://github.com/ShailKPatel/Raddiwala", target="_blank", rel="noopener noreferrer") GitHub Repo
+            span &middot; MIT License
 
     script(src="/js/main.js")
     script.
@@ -193,25 +200,42 @@ html(lang="en")
       // Load user addresses
       async function loadAddresses() {
         try {
-          const response = await RaddiWala.apiCall('/customers/profile');
+          let response;
+          if (typeof RaddiWala !== 'undefined' && RaddiWala.apiCall) {
+            response = await RaddiWala.apiCall('/customers/profile');
+          } else {
+            // Fallback to fetch
+            const fetchResponse = await fetch('/api/customers/profile');
+            if (!fetchResponse.ok) {
+              throw new Error('Failed to load profile');
+            }
+            response = await fetchResponse.json();
+          }
+
           userAddresses = response.addresses || [];
-          
+
           const addressSelect = document.getElementById('addressId');
-          addressSelect.innerHTML = '<option value="">Select pickup address</option>';
-          
-          userAddresses.forEach(address => {
-            const option = document.createElement('option');
-            option.value = address._id;
-            option.textContent = `${address.line}, ${address.area}, ${address.city} - ${address.pincode}`;
-            addressSelect.appendChild(option);
-          });
-          
-          if (userAddresses.length === 0) {
-            addressSelect.innerHTML = '<option value="">No addresses found. Please add an address first.</option>';
+          if (addressSelect) {
+            addressSelect.innerHTML = '<option value="">Select pickup address</option>';
+
+            userAddresses.forEach(address => {
+              const option = document.createElement('option');
+              option.value = address._id;
+              option.textContent = `${address.line}, ${address.area}, ${address.city} - ${address.pincode}`;
+              addressSelect.appendChild(option);
+            });
+
+            if (userAddresses.length === 0) {
+              addressSelect.innerHTML = '<option value="">No addresses found. Please add an address first.</option>';
+            }
           }
         } catch (error) {
           console.error('Failed to load addresses:', error);
-          RaddiWala.showNotification('Failed to load addresses', 'error');
+          if (typeof RaddiWala !== 'undefined' && RaddiWala.showNotification) {
+            RaddiWala.showNotification('Failed to load addresses', 'error');
+          } else {
+            console.error('Failed to load addresses');
+          }
         }
       }
 
@@ -405,38 +429,112 @@ html(lang="en")
 
       // Address modal functions
       function showAddAddressModal() {
-        document.getElementById('addAddressModal').style.display = 'flex';
+        console.log('showAddAddressModal called');
+        if (userAddresses.length >= 3) {
+          if (typeof RaddiWala !== 'undefined' && RaddiWala.showNotification) {
+            RaddiWala.showNotification('Maximum 3 addresses allowed', 'warning');
+          } else {
+            alert('Maximum 3 addresses allowed');
+          }
+          return;
+        }
+        const modal = document.getElementById('addAddressModal');
+        if (modal) {
+          modal.style.display = 'flex';
+          modal.classList.add('show');
+          // Focus on first input
+          setTimeout(() => {
+            const firstInput = document.getElementById('newAddressLine');
+            if (firstInput) firstInput.focus();
+          }, 100);
+        } else {
+          console.error('Add address modal not found');
+        }
       }
 
       function hideAddAddressModal() {
-        document.getElementById('addAddressModal').style.display = 'none';
+        const modal = document.getElementById('addAddressModal');
+        modal.classList.remove('show');
+        setTimeout(() => {
+          modal.style.display = 'none';
+        }, 300);
         document.getElementById('addAddressForm').reset();
       }
 
       // Add address form submission
-      document.getElementById('addAddressForm').addEventListener('submit', async function(e) {
-        e.preventDefault();
-        
-        const formData = {
-          line: document.getElementById('newAddressLine').value,
-          area: document.getElementById('newAddressArea').value,
-          city: document.getElementById('newAddressCity').value,
-          pincode: document.getElementById('newAddressPincode').value,
-          landmark: document.getElementById('newAddressLandmark').value
-        };
-        
-        try {
-          await RaddiWala.apiCall('/customers/addresses', {
-            method: 'POST',
-            body: JSON.stringify(formData)
+      document.addEventListener('DOMContentLoaded', function() {
+        const addAddressForm = document.getElementById('addAddressForm');
+        if (addAddressForm) {
+          addAddressForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            console.log('Add address form submitted');
+
+            const formData = {
+              line: document.getElementById('newAddressLine').value.trim(),
+              area: document.getElementById('newAddressArea').value.trim(),
+              city: document.getElementById('newAddressCity').value.trim(),
+              pincode: document.getElementById('newAddressPincode').value.trim(),
+              landmark: document.getElementById('newAddressLandmark').value.trim()
+            };
+
+            // Validate required fields
+            if (!formData.line || !formData.area || !formData.city || !formData.pincode) {
+              alert('Please fill in all required fields');
+              return;
+            }
+
+            // Validate pincode
+            if (!/^\d{6}$/.test(formData.pincode)) {
+              alert('Please enter a valid 6-digit pincode');
+              return;
+            }
+
+            try {
+              console.log('Sending address data:', formData);
+
+              if (typeof RaddiWala !== 'undefined' && RaddiWala.apiCall) {
+                await RaddiWala.apiCall('/customers/addresses', {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json'
+                  },
+                  body: JSON.stringify(formData)
+                });
+
+                if (RaddiWala.showNotification) {
+                  RaddiWala.showNotification('Address added successfully!', 'success');
+                } else {
+                  alert('Address added successfully!');
+                }
+              } else {
+                // Fallback to fetch if RaddiWala is not available
+                const response = await fetch('/api/customers/addresses', {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json'
+                  },
+                  body: JSON.stringify(formData)
+                });
+
+                if (!response.ok) {
+                  throw new Error('Failed to add address');
+                }
+
+                alert('Address added successfully!');
+              }
+
+              hideAddAddressModal();
+              loadAddresses(); // Reload addresses
+
+            } catch (error) {
+              console.error('Error adding address:', error);
+              if (typeof RaddiWala !== 'undefined' && RaddiWala.showNotification) {
+                RaddiWala.showNotification(error.message || 'Failed to add address', 'error');
+              } else {
+                alert('Error: ' + (error.message || 'Failed to add address'));
+              }
+            }
           });
-          
-          RaddiWala.showNotification('Address added successfully!', 'success');
-          hideAddAddressModal();
-          loadAddresses(); // Reload addresses
-          
-        } catch (error) {
-          RaddiWala.showNotification(error.message, 'error');
         }
       });
 

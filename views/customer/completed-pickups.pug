@@ -142,7 +142,7 @@ html(lang="en")
             span Loading completed pickups...
 
     // Rating Modal
-    .modal#ratingModal
+    .modal#ratingModal(style="display: none;")
       .modal-content
         .modal-header
           h3 Rate Raddiwala
@@ -170,6 +170,15 @@ html(lang="en")
           .modal-actions
             button.btn.btn-secondary(type="button", onclick="hideRatingModal()") Cancel
             button.btn.btn-primary(type="submit") Submit Rating
+
+    // Footer
+    footer.footer
+      .container
+        .footer-bottom
+          p &copy; 2025 Shail K Patel &middot; Crafted out of boredom.
+          p
+            a(href="https://github.com/ShailKPatel/Raddiwala", target="_blank", rel="noopener noreferrer") GitHub Repo
+            span &middot; MIT License
 
     script(src="/js/main.js")
     script.
@@ -309,12 +318,25 @@ html(lang="en")
 
       // Show rating modal
       function showRatingModal(transactionId) {
+        console.log('showRatingModal called with ID:', transactionId);
         const transaction = completedTransactions.find(t => t._id === transactionId);
+        if (!transaction) {
+          console.error('Transaction not found:', transactionId);
+          alert('Transaction not found');
+          return;
+        }
+
         currentTransaction = transaction;
-        
+
         const modal = document.getElementById('ratingModal');
         const summary = document.getElementById('transactionSummary');
-        
+
+        if (!modal) {
+          console.error('Rating modal not found');
+          alert('Rating modal not found');
+          return;
+        }
+
         const request = transaction.pickupRequestId;
         const raddiwala = transaction.raddiwalaId;
         
@@ -335,10 +357,15 @@ html(lang="en")
         clearErrors();
         
         modal.style.display = 'flex';
+        modal.classList.add('show');
       }
 
       function hideRatingModal() {
-        document.getElementById('ratingModal').style.display = 'none';
+        const modal = document.getElementById('ratingModal');
+        modal.classList.remove('show');
+        setTimeout(() => {
+          modal.style.display = 'none';
+        }, 300);
         currentTransaction = null;
       }
 
@@ -384,21 +411,59 @@ html(lang="en")
         }
 
         try {
-          RaddiWala.showLoading(submitBtn);
-          
-          await RaddiWala.apiCall(`/customers/rate-raddiwala/${currentTransaction._id}`, {
-            method: 'POST',
-            body: JSON.stringify(formData)
-          });
-          
-          RaddiWala.showNotification('Rating submitted successfully!', 'success');
+          if (typeof RaddiWala !== 'undefined' && RaddiWala.showLoading) {
+            RaddiWala.showLoading(submitBtn);
+          } else {
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Submitting...';
+          }
+
+          if (typeof RaddiWala !== 'undefined' && RaddiWala.apiCall) {
+            await RaddiWala.apiCall(`/customers/rate-raddiwala/${currentTransaction._id}`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify(formData)
+            });
+          } else {
+            // Fallback to fetch
+            const response = await fetch(`/api/customers/rate-raddiwala/${currentTransaction._id}`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify(formData)
+            });
+
+            if (!response.ok) {
+              throw new Error('Failed to submit rating');
+            }
+          }
+
+          if (typeof RaddiWala !== 'undefined' && RaddiWala.showNotification) {
+            RaddiWala.showNotification('Rating submitted successfully!', 'success');
+          } else {
+            alert('Rating submitted successfully!');
+          }
+
           hideRatingModal();
           loadCompletedTransactions(); // Reload data
-          
+
         } catch (error) {
-          RaddiWala.showNotification(error.message, 'error');
+          console.error('Error submitting rating:', error);
+          if (typeof RaddiWala !== 'undefined' && RaddiWala.showNotification) {
+            RaddiWala.showNotification(error.message || 'Failed to submit rating', 'error');
+          } else {
+            alert('Error: ' + (error.message || 'Failed to submit rating'));
+          }
         } finally {
-          RaddiWala.hideLoading(submitBtn, 'Submit Rating');
+          if (typeof RaddiWala !== 'undefined' && RaddiWala.hideLoading) {
+            RaddiWala.hideLoading(submitBtn, 'Submit Rating');
+          } else {
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Submit Rating';
+          }
         }
       });
 

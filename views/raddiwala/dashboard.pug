@@ -25,76 +25,76 @@ html(lang="en")
     // Main Content
     main.dashboard-content
       .container
-        .dashboard-header
-          h1 Raddiwala Dashboard
-          p Welcome back, #{user.name}! Ready to collect some scrap?
+        .hero
+          .hero-content
+            h1.hero-title Raddiwala Dashboard
+            p.hero-description Welcome back, #{user.name}! Ready to collect some scrap?
 
         // Quick Stats
-        .stats-grid
+        .dashboard-grid.three-stats
           .stat-card
-            .stat-icon
-              i.fas.fa-gavel
-            .stat-info
-              h3#totalBids 0
-              p Total Bids Placed
+            .stat-number#totalBids 0
+            .stat-label Total Bids Placed
           .stat-card
-            .stat-icon
-              i.fas.fa-handshake
-            .stat-info
-              h3#acceptedBids 0
-              p Accepted Bids
+            .stat-number#acceptedBids 0
+            .stat-label Accepted Bids
           .stat-card
-            .stat-icon
-              i.fas.fa-check-circle
-            .stat-info
-              h3#completedPickups 0
-              p Completed Pickups
-          .stat-card
-            .stat-icon
-              i.fas.fa-rupee-sign
-            .stat-info
-              h3#totalEarnings ₹0
-              p Total Earnings
+            .stat-number#completedPickups 0
+            .stat-label Completed Pickups
 
         // Monthly Pickup Status
-        .pickup-status#pickupStatus
-          // Will be populated by JavaScript
+        .pickup-status
+          h2.section-title Monthly Pickup Status
+          .pickup-status-content#pickupStatus
+            .loading-spinner
+              i.fas.fa-spinner.fa-spin
+              span Loading pickup status...
 
         // Quick Actions
         .quick-actions
-          h2 Quick Actions
+          h2.section-title Quick Actions
           .action-grid
-            .action-card(onclick="window.location.href='/raddiwala/ongoing-requests'")
+            .action-card(onclick="window.location.href='/raddiwala/ongoing-requests'", style="cursor: pointer;")
               .action-icon
-                i.fas.fa-search
+                i.fas.fa-list-ul(title="Requests")
               h3 View Ongoing Requests
               p Browse and bid on pickup requests in your area
 
-            .action-card(onclick="window.location.href='/raddiwala/pending-pickups'")
+            .action-card(onclick="window.location.href='/raddiwala/pending-pickups'", style="cursor: pointer;")
               .action-icon
-                i.fas.fa-clock
+                i.fas.fa-truck(title="Pickup")
               h3 View Pending Pickups
               p Manage your accepted bids and complete pickups
 
-            .action-card(onclick="window.location.href='/raddiwala/completed-pickups'")
+            .action-card(onclick="window.location.href='/raddiwala/completed-pickups'", style="cursor: pointer;")
               .action-icon
-                i.fas.fa-history
+                i.fas.fa-check-double(title="Completed")
               h3 View Completed Pickups
               p Review your completed transactions and rate customers
 
-            .action-card(onclick="window.location.href='/raddiwala/subscription'")
+            .action-card(onclick="window.location.href='/raddiwala/subscription'", style="cursor: pointer;")
               .action-icon
-                i.fas.fa-crown
+                i.fas.fa-star(title="Premium")
               h3 Manage Subscription
               p View subscription status and upgrade to premium
 
         // Recent Activity
         .recent-activity
-          h2 Recent Activity
+          h2.section-title Recent Activity
           .activity-container#recentActivity
-            .loading-spinner
-              i.fas.fa-spinner.fa-spin
-              span Loading recent activity...
+            .card
+              .loading-spinner
+                i.fas.fa-spinner.fa-spin
+                span Loading recent activity...
+
+    // Footer
+    footer.footer
+      .container
+        .footer-bottom
+          p &copy; 2025 Shail K Patel &middot; Crafted out of boredom.
+          p
+            a(href="https://github.com/ShailKPatel/Raddiwala", target="_blank", rel="noopener noreferrer") GitHub Repo
+            span &middot; MIT License
 
     script(src="/js/main.js")
     script.
@@ -119,10 +119,6 @@ html(lang="en")
           document.getElementById('acceptedBids').textContent = 
             bids.filter(b => b.isAccepted).length;
           document.getElementById('completedPickups').textContent = transactions.length;
-          
-          const totalEarnings = transactions.reduce((sum, t) => sum + t.totalAmount, 0);
-          document.getElementById('totalEarnings').textContent = 
-            RaddiWala.formatCurrency(totalEarnings);
 
           // Update pickup status
           updatePickupStatus(subscriptionStatus);

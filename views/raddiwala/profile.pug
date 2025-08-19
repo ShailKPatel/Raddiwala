@@ -30,124 +30,140 @@ html(lang="en")
           h1 Profile Management
           p Update your profile information and shop address
 
-        .profile-container
-          // Profile Overview
-          .profile-overview
-            .profile-card
-              .profile-header
-                .profile-avatar
-                  img#profileImage(src="/images/default-avatar.svg", alt="Profile Picture", style="display: none;")
-                  i#profileIcon.fas.fa-user-circle
-                  .avatar-upload
-                    input#profilePictureInput(type="file", accept="image/*", style="display: none;")
-                    button.btn.btn-sm.btn-secondary(onclick="document.getElementById('profilePictureInput').click()")
-                      i.fas.fa-camera
-                      span Change Photo
-                .profile-info
-                  .profile-name-section
-                    h2#profileName Loading...
-                    .premium-badge#premiumBadge(style="display: none;")
-                      i.fas.fa-crown
-                      span PREMIUM
-                  p#profileEmail Loading...
-                  .profile-rating
-                    span#profileRating
-                    span#profileReviews
-              
-              .profile-stats
-                .stat-item
-                  span.stat-value#monthlyPickups 0
-                  span.stat-label Monthly Pickups
-                .stat-item
-                  span.stat-value#totalEarnings ₹0
-                  span.stat-label Total Earnings
-                .stat-item
-                  span.stat-value#subscriptionStatus Free
-                  span.stat-label Plan Status
+        // Profile Overview Card
+        .card
+          .profile-header-section
+            .profile-avatar-container
+              .profile-avatar
+                img#profileImage(src="/images/default-avatar.svg", alt="Profile Picture", style="display: none;")
+                i#profileIcon.fas.fa-user-circle
+              .profile-info
+                .profile-name-section
+                  h2#profileName Loading...
+                  .premium-badge#premiumBadge(style="display: none;")
+                    i.fas.fa-crown
+                    span PREMIUM
+                p#profileEmail Loading...
+                .profile-rating
+                  span#profileRating
+                  span#profileReviews
+            .profile-actions
+              input#profilePictureInput(type="file", accept="image/*", style="display: none;")
+              button.btn.btn-secondary(onclick="document.getElementById('profilePictureInput').click()")
+                i.fas.fa-camera
+                span Change Photo
 
-          // Profile Forms
-          .profile-forms
-            // Basic Information
-            .form-section
-              h3 Basic Information
-              form#profileForm
-                .form-row
-                  .form-group
-                    label(for="name") Full Name *
-                    input#name(type="text", required)
-                    .error-message#nameError
+        // Profile Stats
+        .dashboard-grid.two-stats
+          .stat-card
+            .stat-number#monthlyPickups 0
+            .stat-label Monthly Pickups
+          .stat-card
+            .stat-number#subscriptionStatus Free
+            .stat-label Plan Status
 
-                  .form-group
-                    label(for="phone") Phone Number *
-                    input#phone(type="tel", required)
-                    .error-message#phoneError
+        // Basic Information
+        .card
+          h3 Basic Information
+          form#profileForm
+            .form-group
+              label.form-label(for="name") Full Name *
+              input.form-input#name(type="text", required)
+              .error-message#nameError
 
-                .form-actions
-                  button.btn.btn-primary(type="submit") Update Profile
+            .form-group
+              label.form-label(for="phone") Phone Number *
+              input.form-input#phone(type="tel", required)
+              .error-message#phoneError
 
-            // Shop Address
-            .form-section
-              h3 Shop Address</h3>
-              form#addressForm
-                .form-row
-                  .form-group
-                    label(for="addressLine") Address Line *
-                    input#addressLine(type="text", required)
-                    .error-message#addressLineError
+            .form-actions
+              button.btn.btn-primary(type="submit") Update Profile
 
-                  .form-group
-                    label(for="addressArea") Area *
-                    input#addressArea(type="text", required)
-                    .error-message#addressAreaError
+        // Shop Address
+        .card
+          h3 Shop Address
+          form#addressForm
+            .form-group
+              label.form-label(for="addressLine") Address Line *
+              input.form-input#addressLine(type="text", required)
+              .error-message#addressLineError
 
-                .form-row
-                  .form-group
-                    label(for="addressCity") City *
-                    input#addressCity(type="text", required)
-                    .error-message#addressCityError
+            .form-group
+              label.form-label(for="addressArea") Area *
+              input.form-input#addressArea(type="text", required)
+              .error-message#addressAreaError
 
-                  .form-group
-                    label(for="addressPincode") Pincode *
-                    input#addressPincode(type="text", maxlength="6", required)
-                    .error-message#addressPincodeError
+            .form-group
+              label.form-label(for="addressCity") City *
+              input.form-input#addressCity(type="text", required)
+              .error-message#addressCityError
 
-                .form-group
-                  label(for="addressLandmark") Landmark (Optional)
-                  input#addressLandmark(type="text")
+            .form-group
+              label.form-label(for="addressPincode") Pincode *
+              input.form-input#addressPincode(type="text", maxlength="6", required)
+              .error-message#addressPincodeError
 
-                .form-actions
-                  button.btn.btn-primary(type="submit") Update Address
+            .form-group
+              label.form-label(for="addressLandmark") Landmark (Optional)
+              input.form-input#addressLandmark(type="text")
 
-            // Email Change
-            .form-section
-              h3 Change Email</h3>
-              form#emailForm
-                .form-group
-                  label(for="newEmail") New Email Address *
-                  input#newEmail(type="email", required)
-                  .error-message#newEmailError
+            .form-actions
+              button.btn.btn-primary(type="submit") Update Address
 
-                .form-group#otpGroup(style="display: none;")
-                  label(for="emailOtp") Enter OTP *
-                  input#emailOtp(type="text", maxlength="4")
-                  .error-message#emailOtpError
-                  
-                  .development-mode#emailDevMode(style="display: none;")
-                    p.dev-notice Development Mode - OTP: 
-                      span#emailDevOTP
+        // Email Change
+        .card
+          h3 Change Email
+          .email-info
+            .email-display
+              .email-label Email Address
+              .email-value#currentEmail Loading...
+            button.btn.btn-primary(onclick="showEmailChangeModal()") Change Email
 
-                .form-actions
-                  button.btn.btn-primary#emailSubmitBtn(type="submit") Send OTP
+        // Danger Zone
+        .card.danger-zone
+          h3 Danger Zone
+          .danger-content
+            .danger-item
+              .danger-info
+                h4 Delete Account
+                p This action cannot be undone. All your data will be permanently deleted.
+              .danger-actions
+                button.btn.btn-danger(onclick="showDeleteConfirmation()") Delete Account
 
-            // Danger Zone
-            .form-section.danger-zone
-              h3 Danger Zone</h3>
-              .danger-content
-                .danger-item
-                  .danger-info
-                    h4 Delete Account
-                    p This action cannot be undone. All your data will be permanently deleted.
-                  button.btn.btn-danger(onclick="showDeleteConfirmation()") Delete Account
+    // Email Change Modal
+    .modal#emailChangeModal(style="display: none;")
+      .modal-content
+        .modal-header
+          h3 Change Email Address
+          button.modal-close(onclick="hideEmailChangeModal()") &times;
+
+        .email-change-content
+          .step#emailStep
+            .form-group
+              label(for="newEmailInput") New Email Address *
+              input#newEmailInput(type="email", placeholder="Enter new email address", required)
+              .error-message#newEmailError
+            .form-actions
+              button.btn.btn-secondary(onclick="hideEmailChangeModal()") Cancel
+              button.btn.btn-primary(onclick="sendEmailOTP()") Send OTP
+
+          .step#otpStep(style="display: none;")
+            .otp-info
+              p OTP sent to:
+                strong#otpEmailDisplay
+              p Please check your email and enter the 4-digit code below:
+            .form-group
+              label(for="emailOtpInput") Enter OTP *
+              input#emailOtpInput(type="text", maxlength="4", placeholder="Enter 4-digit OTP")
+              .development-mode#emailDevMode(style="display: none;")
+                .dev-notice
+                  i.fas.fa-code
+                  span Debug Mode - OTP:
+                  strong#emailDevOTP
+              .error-message#emailOtpError
+            .form-actions
+              button.btn.btn-secondary(onclick="backToEmailStep()") Back
+              button.btn.btn-primary(onclick="verifyEmailOTP()") Verify & Update
 
     // Delete Confirmation Modal
     .modal#deleteModal
@@ -168,6 +184,15 @@ html(lang="en")
         .modal-actions
           button.btn.btn-secondary(onclick="hideDeleteModal()") Cancel
           button.btn.btn-danger#deleteConfirmBtn(onclick="confirmDelete()" disabled) Delete Account
+
+    // Footer
+    footer.footer
+      .container
+        .footer-bottom
+          p &copy; 2025 Shail K Patel &middot; Crafted out of boredom.
+          p
+            a(href="https://github.com/ShailKPatel/Raddiwala", target="_blank", rel="noopener noreferrer") GitHub Repo
+            span &middot; MIT License
 
     script(src="/js/main.js")
     script.
@@ -194,6 +219,7 @@ html(lang="en")
         // Profile overview
         document.getElementById('profileName').textContent = profile.name;
         document.getElementById('profileEmail').textContent = profile.email;
+        document.getElementById('currentEmail').textContent = profile.email;
 
         // Profile picture
         const profileImage = document.getElementById('profileImage');
@@ -264,20 +290,27 @@ html(lang="en")
       }
 
       // Profile form submission
-      document.getElementById('profileForm').addEventListener('submit', async function(e) {
+      const profileForm = document.getElementById('profileForm');
+      if (profileForm) {
+        profileForm.addEventListener('submit', async function(e) {
         e.preventDefault();
-        
+        console.log('=== RADDIWALA PROFILE FORM SUBMITTED ===');
+
         const formData = {
-          name: document.getElementById('name').value,
-          phone: document.getElementById('phone').value
+          name: document.getElementById('name').value.trim(),
+          phone: document.getElementById('phone').value.trim()
         };
+        console.log('Form data:', formData);
 
         const submitBtn = e.target.querySelector('button[type="submit"]');
         clearErrors();
 
+        console.log('Calling validateProfileForm...');
         if (!validateProfileForm(formData)) {
+          console.log('Validation failed');
           return;
         }
+        console.log('Validation passed');
 
         try {
           RaddiWala.showLoading(submitBtn);
@@ -295,10 +328,13 @@ html(lang="en")
         } finally {
           RaddiWala.hideLoading(submitBtn, 'Update Profile');
         }
-      });
+        });
+      }
 
       // Address form submission
-      document.getElementById('addressForm').addEventListener('submit', async function(e) {
+      const addressForm = document.getElementById('addressForm');
+      if (addressForm) {
+        addressForm.addEventListener('submit', async function(e) {
         e.preventDefault();
         
         const formData = {
@@ -310,7 +346,7 @@ html(lang="en")
         };
 
         const submitBtn = e.target.querySelector('button[type="submit"]');
-        clearErrors();
+        clearAddressErrors();
 
         if (!validateAddressForm(formData)) {
           return;
@@ -331,80 +367,289 @@ html(lang="en")
         } finally {
           RaddiWala.hideLoading(submitBtn, 'Update Address');
         }
-      });
+        });
+      }
 
-      // Email form submission
-      document.getElementById('emailForm').addEventListener('submit', async function(e) {
-        e.preventDefault();
-        
-        const newEmail = document.getElementById('newEmail').value;
-        const otp = document.getElementById('emailOtp').value;
-        const submitBtn = document.getElementById('emailSubmitBtn');
-        
-        clearErrors();
+      // Email change modal functions
+      function showEmailChangeModal() {
+        console.log('=== SHOW EMAIL CHANGE MODAL CLICKED ===');
+        const modal = document.getElementById('emailChangeModal');
+        console.log('Modal element:', modal);
 
-        if (!emailOtpSent) {
-          // Send OTP
-          if (!RaddiWala.validateEmail(newEmail)) {
-            showError('newEmailError', 'Please enter a valid email address');
-            return;
-          }
+        if (!modal) {
+          console.error('Email change modal not found!');
+          alert('Modal not found. Please refresh the page.');
+          return;
+        }
 
-          try {
-            RaddiWala.showLoading(submitBtn);
-            
-            const response = await RaddiWala.sendOTP(newEmail, 'email_change', 'raddiwala');
-            
-            emailOtpSent = true;
-            document.getElementById('otpGroup').style.display = 'block';
-            submitBtn.textContent = 'Change Email';
-            
-            // Show development OTP if available
-            if (response.developmentOTP) {
-              document.getElementById('emailDevOTP').textContent = response.developmentOTP;
+        modal.style.display = 'flex';
+        modal.classList.add('show');
+
+        document.getElementById('emailStep').style.display = 'block';
+        document.getElementById('otpStep').style.display = 'none';
+        document.getElementById('newEmailInput').value = '';
+        document.getElementById('emailOtpInput').value = '';
+        clearEmailErrors();
+        console.log('Modal should be visible now with forced styles');
+      }
+
+      function hideEmailChangeModal() {
+        const modal = document.getElementById('emailChangeModal');
+        modal.classList.remove('show');
+        setTimeout(() => {
+          modal.style.display = 'none';
+        }, 300);
+        clearEmailErrors();
+      }
+
+      function backToEmailStep() {
+        document.getElementById('emailStep').style.display = 'block';
+        document.getElementById('otpStep').style.display = 'none';
+        clearEmailErrors();
+      }
+
+      async function sendEmailOTP() {
+        console.log('=== SEND EMAIL OTP CLICKED ===');
+        const newEmail = document.getElementById('newEmailInput').value.trim();
+        console.log('New email:', newEmail);
+
+        if (!newEmail) {
+          showEmailError('newEmailError', 'Please enter an email address');
+          return;
+        }
+
+        if (!isValidEmail(newEmail)) {
+          showEmailError('newEmailError', 'Please enter a valid email address');
+          return;
+        }
+
+        // Check if it's the same as current email
+        const currentEmail = document.getElementById('currentEmail').textContent;
+        if (newEmail === currentEmail) {
+          showEmailError('newEmailError', 'This is already your current email address');
+          return;
+        }
+
+        try {
+          console.log('Sending OTP request...');
+          const response = await fetch('/api/raddiwalas/send-email-otp', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ newEmail })
+          });
+
+          console.log('Response status:', response.status);
+          const data = await response.json();
+          console.log('Response data:', data);
+
+          if (response.ok) {
+            document.getElementById('otpEmailDisplay').textContent = newEmail;
+            document.getElementById('emailStep').style.display = 'none';
+            document.getElementById('otpStep').style.display = 'block';
+
+            // Show dev OTP if available
+            if (data.devOTP) {
+              document.getElementById('emailDevOTP').textContent = data.devOTP;
               document.getElementById('emailDevMode').style.display = 'block';
             }
-            
-            RaddiWala.showNotification('OTP sent to new email address!', 'success');
-            
-          } catch (error) {
-            RaddiWala.showNotification(error.message, 'error');
-          } finally {
-            RaddiWala.hideLoading(submitBtn, 'Verify & Change Email');
-          }
-        } else {
-          // Verify OTP and change email
-          if (!otp || !RaddiWala.validateOTP(otp)) {
-            showError('emailOtpError', 'Please enter a valid 4-digit OTP');
-            return;
-          }
 
-          try {
-            RaddiWala.showLoading(submitBtn);
-            
-            // This would need a separate API endpoint for email change
-            RaddiWala.showNotification('Email change functionality will be implemented in production', 'info');
-            
-            // Reset form
-            emailOtpSent = false;
-            document.getElementById('emailForm').reset();
-            document.getElementById('otpGroup').style.display = 'none';
-            document.getElementById('emailDevMode').style.display = 'none';
-            submitBtn.textContent = 'Send OTP';
-            
-          } catch (error) {
-            RaddiWala.showNotification(error.message, 'error');
-          } finally {
-            RaddiWala.hideLoading(submitBtn, 'Change Email');
+            if (typeof RaddiWala !== 'undefined' && RaddiWala.showNotification) {
+              RaddiWala.showNotification('OTP sent to your new email address', 'success');
+            } else {
+              alert('OTP sent to your new email address');
+            }
+          } else {
+            // Handle specific error cases
+            if (data.message && data.message.includes('already in use')) {
+              showEmailError('newEmailError', 'This email is already registered. Please use a different email.');
+            } else {
+              showEmailError('newEmailError', data.message || 'Failed to send OTP');
+            }
           }
+        } catch (error) {
+          console.error('Send OTP error:', error);
+          showEmailError('newEmailError', 'Network error. Please try again.');
         }
-      });
+      }
+
+      async function verifyEmailOTP() {
+        const newEmail = document.getElementById('newEmailInput').value.trim();
+        const otp = document.getElementById('emailOtpInput').value.trim();
+
+        if (!otp) {
+          showEmailError('emailOtpError', 'Please enter the OTP');
+          return;
+        }
+
+        try {
+          const response = await fetch('/api/raddiwalas/verify-email-otp', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ newEmail, otp })
+          });
+
+          const data = await response.json();
+
+          if (response.ok) {
+            document.getElementById('currentEmail').textContent = newEmail;
+            document.getElementById('profileEmail').textContent = newEmail;
+            hideEmailChangeModal();
+            if (typeof RaddiWala !== 'undefined' && RaddiWala.showNotification) {
+              RaddiWala.showNotification('Email address updated successfully!', 'success');
+            } else {
+              alert('Email address updated successfully!');
+            }
+          } else {
+            showEmailError('emailOtpError', data.message || 'Invalid OTP');
+          }
+        } catch (error) {
+          showEmailError('emailOtpError', 'Network error. Please try again.');
+        }
+      }
+
+      function showEmailError(elementId, message) {
+        const errorElement = document.getElementById(elementId);
+        if (errorElement) {
+          errorElement.textContent = message;
+          errorElement.style.display = 'block';
+        }
+      }
+
+      function clearEmailErrors() {
+        ['newEmailError', 'emailOtpError'].forEach(id => {
+          const element = document.getElementById(id);
+          if (element) {
+            element.textContent = '';
+            element.style.display = 'none';
+          }
+        });
+      }
+
+      function isValidEmail(email) {
+        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+      }
+
+      // Comprehensive validation functions
+      function isValidPhone(phone) {
+        // Indian phone number: 10 digits, can start with 6-9
+        return /^[6-9]\d{9}$/.test(phone);
+      }
+
+      function isValidPincode(pincode) {
+        // Indian pincode: 6 digits
+        return /^\d{6}$/.test(pincode);
+      }
+
+      function isValidName(name) {
+        // Name should be 2-50 characters, only letters and spaces
+        return /^[a-zA-Z\s]{2,50}$/.test(name.trim());
+      }
+
+      function validateProfileForm(formData) {
+        console.log('=== VALIDATING PROFILE FORM ===');
+        console.log('Form data to validate:', formData);
+        let isValid = true;
+        clearErrors();
+
+        // Validate name
+        console.log('Validating name:', formData.name);
+        if (!formData.name || !isValidName(formData.name)) {
+          console.log('Name validation failed');
+          showError('nameError', 'Name should be 2-50 characters and contain only letters and spaces');
+          isValid = false;
+        }
+
+        // Validate phone
+        console.log('Validating phone:', formData.phone);
+        if (!formData.phone || !isValidPhone(formData.phone)) {
+          console.log('Phone validation failed');
+          showError('phoneError', 'Please enter a valid 10-digit mobile number starting with 6-9');
+          isValid = false;
+        }
+
+        console.log('Validation result:', isValid);
+        return isValid;
+      }
+
+      function validateAddressForm(formData) {
+        let isValid = true;
+        clearAddressErrors();
+
+        // Validate address line
+        if (!formData.line || formData.line.trim().length < 5) {
+          showAddressError('addressLineError', 'Address line should be at least 5 characters');
+          isValid = false;
+        }
+
+        // Validate area
+        if (!formData.area || formData.area.trim().length < 2) {
+          showAddressError('addressAreaError', 'Area should be at least 2 characters');
+          isValid = false;
+        }
+
+        // Validate city
+        if (!formData.city || !isValidName(formData.city)) {
+          showAddressError('addressCityError', 'Please enter a valid city name');
+          isValid = false;
+        }
+
+        // Validate pincode
+        if (!formData.pincode || !isValidPincode(formData.pincode)) {
+          showAddressError('addressPincodeError', 'Please enter a valid 6-digit pincode');
+          isValid = false;
+        }
+
+        return isValid;
+      }
+
+      function showError(elementId, message) {
+        const errorElement = document.getElementById(elementId);
+        if (errorElement) {
+          errorElement.textContent = message;
+          errorElement.style.display = 'block';
+        }
+      }
+
+      function showAddressError(elementId, message) {
+        const errorElement = document.getElementById(elementId);
+        if (errorElement) {
+          errorElement.textContent = message;
+          errorElement.style.display = 'block';
+        }
+      }
+
+      function clearErrors() {
+        ['nameError', 'phoneError'].forEach(id => {
+          const element = document.getElementById(id);
+          if (element) {
+            element.textContent = '';
+            element.style.display = 'none';
+          }
+        });
+      }
+
+      function clearAddressErrors() {
+        ['addressLineError', 'addressAreaError', 'addressCityError', 'addressPincodeError'].forEach(id => {
+          const element = document.getElementById(id);
+          if (element) {
+            element.textContent = '';
+            element.style.display = 'none';
+          }
+        });
+      }
 
       // Delete confirmation
-      document.getElementById('deleteConfirmation').addEventListener('input', function() {
-        const confirmBtn = document.getElementById('deleteConfirmBtn');
-        confirmBtn.disabled = this.value !== 'DELETE';
-      });
+      const deleteConfirmation = document.getElementById('deleteConfirmation');
+      if (deleteConfirmation) {
+        deleteConfirmation.addEventListener('input', function() {
+          const confirmBtn = document.getElementById('deleteConfirmBtn');
+          if (confirmBtn) {
+            confirmBtn.disabled = this.value !== 'DELETE';
+          }
+        });
+      }
 
       function showDeleteConfirmation() {
         document.getElementById('deleteModal').style.display = 'flex';
@@ -434,7 +679,9 @@ html(lang="en")
       }
 
       // Profile picture upload
-      document.getElementById('profilePictureInput').addEventListener('change', async function(e) {
+      const profilePictureInput = document.getElementById('profilePictureInput');
+      if (profilePictureInput) {
+        profilePictureInput.addEventListener('change', async function(e) {
         const file = e.target.files[0];
         if (!file) return;
 
@@ -480,59 +727,12 @@ html(lang="en")
           console.error('Profile picture upload error:', error);
           RaddiWala.showNotification(error.message || 'Something went wrong', 'error');
         }
-      });
-
-      // Validation functions
-      function validateProfileForm(formData) {
-        let isValid = true;
-        
-        if (!formData.name || formData.name.trim().length < 2) {
-          showError('nameError', 'Name must be at least 2 characters long');
-          isValid = false;
-        }
-        
-        if (!formData.phone || !RaddiWala.validatePhone(formData.phone)) {
-          showError('phoneError', 'Please enter a valid 10-digit mobile number');
-          isValid = false;
-        }
-        
-        return isValid;
+        });
       }
 
-      function validateAddressForm(formData) {
-        let isValid = true;
-        
-        if (!formData.line.trim()) {
-          showError('addressLineError', 'Address line is required');
-          isValid = false;
-        }
-        
-        if (!formData.area.trim()) {
-          showError('addressAreaError', 'Area is required');
-          isValid = false;
-        }
-        
-        if (!formData.city.trim()) {
-          showError('addressCityError', 'City is required');
-          isValid = false;
-        }
-        
-        if (!formData.pincode || !/^[1-9][0-9]{5}$/.test(formData.pincode)) {
-          showError('addressPincodeError', 'Please enter a valid 6-digit pincode');
-          isValid = false;
-        }
-        
-        return isValid;
-      }
 
-      function showError(elementId, message) {
-        document.getElementById(elementId).textContent = message;
-      }
 
-      function clearErrors() {
-        const errorElements = document.querySelectorAll('.error-message');
-        errorElements.forEach(el => el.textContent = '');
-      }
+
 
       // Logout confirmation
       function confirmLogout() {
@@ -542,4 +742,8 @@ html(lang="en")
       }
 
       // Load data when page loads
-      document.addEventListener('DOMContentLoaded', loadProfileData);
+      console.log('RaddiWala profile page JavaScript loaded');
+      document.addEventListener('DOMContentLoaded', function() {
+        console.log('DOM content loaded, calling loadProfileData');
+        loadProfileData();
+      });

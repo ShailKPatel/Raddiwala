@@ -1,4 +1,5 @@
 const express = require('express');
+const validator = require('validator');
 const multer = require('multer');
 const path = require('path');
 const Raddiwala = require('../models/Raddiwala');
@@ -54,7 +55,23 @@ router.get('/profile', requireRaddiwala, async (req, res) => {
 router.put('/profile', requireRaddiwala, async (req, res) => {
   try {
     const { name, phone } = req.body;
-    
+
+    // Check if phone number is already in use by another user
+    if (phone) {
+      const Customer = require('../models/Customer');
+      const existingCustomer = await Customer.findOne({ phone });
+      const existingRaddiwala = await Raddiwala.findOne({
+        phone,
+        _id: { $ne: req.user._id }
+      });
+
+      if (existingCustomer || existingRaddiwala) {
+        return res.status(400).json({
+          message: 'This phone number is already registered with another account'
+        });
+      }
+    }
+
     const raddiwala = await Raddiwala.findByIdAndUpdate(
       req.user._id,
       { name, phone },
@@ -304,6 +321,106 @@ router.delete('/account', requireRaddiwala, async (req, res) => {
     res.json({ message: 'Account deleted successfully' });
   } catch (error) {
     res.status(500).json({ message: 'Failed to delete account' });
+  }
+});
+
+// Send OTP for email change
+router.post('/send-email-otp', requireRaddiwala, async (req, res) => {
+  console.log('RaddiWala send-email-otp endpoint hit');
+  try {
+    const { newEmail } = req.body;
+    console.log('New email request:', newEmail);
+
+    if (!newEmail) {
+      return res.status(400).json({ message: 'New email is required' });
+    }
+
+    if (!validator.isEmail(newEmail)) {
+      return res.status(400).json({ message: 'Please provide a valid email' });
+    }
+
+    // Check if email is already in use
+    const Customer = require('../models/Customer');
+    const existingCustomer = await Customer.findOne({ email: newEmail });
+    const existingRaddiwala = await Raddiwala.findOne({ email: newEmail });
+
+    if (existingCustomer || existingRaddiwala) {
+      return res.status(400).json({ message: 'Email is already in use' });
+    }
+
+    // Generate and save OTP
+    const OTP = require('../models/OTP');
+    const otpCode = OTP.generateOTP();
+
+    // Remove any existing OTPs for this email and purpose
+    await OTP.deleteMany({ email: newEmail, purpose: 'email_change', role: 'raddiwala' });
+
+    const otp = new OTP({
+      email: newEmail,
+      otp: otpCode,
+      purpose: 'email_change',
+      role: 'raddiwala'
+    });
+
+    await otp.save();
+
+    // Send OTP via email
+    const emailService = require('../utils/emailService');
+    await emailService.sendOTP(newEmail, otpCode, 'email_change');
+
+    res.json({
+      message: 'OTP sent successfully',
+      devOTP: process.env.DEVELOPMENT_MODE === 'true' ? otpCode : undefined
+    });
+
+  } catch (error) {
+    console.error('Send email OTP error:', error);
+    res.status(500).json({ message: 'Failed to send OTP' });
+  }
+});
+
+// Verify OTP and update email
+router.post('/verify-email-otp', requireRaddiwala, async (req, res) => {
+  try {
+    const { newEmail, otp } = req.body;
+
+    if (!newEmail || !otp) {
+      return res.status(400).json({ message: 'New email and OTP are required' });
+    }
+
+    // Verify OTP
+    const OTP = require('../models/OTP');
+    const otpRecord = await OTP.findOne({
+      email: newEmail,
+      purpose: 'email_change',
+      role: 'raddiwala',
+      isUsed: false
+    }).sort({ createdAt: -1 });
+
+    if (!otpRecord) {
+      return res.status(400).json({ message: 'Invalid or expired OTP' });
+    }
+
+    await otpRecord.verify(otp);
+
+    // Update raddiwala email
+    const raddiwala = await Raddiwala.findByIdAndUpdate(
+      req.user._id,
+      { email: newEmail },
+      { new: true, runValidators: true }
+    );
+
+    res.json({
+      message: 'Email updated successfully',
+      email: raddiwala.email
+    });
+
+  } catch (error) {
+    console.error('Verify email OTP error:', error);
+    if (error.message === 'Invalid OTP' || error.message === 'OTP already used') {
+      return res.status(400).json({ message: error.message });
+    }
+    res.status(500).json({ message: 'Failed to update email' });
   }
 });
 

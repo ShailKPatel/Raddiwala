@@ -453,6 +453,15 @@ html(lang="en")
           button.btn-cancel(onclick="hidePaymentModal()") Cancel
           button.btn-purchase#purchaseBtn(onclick="processPurchase()" disabled) Purchase Premium (₹30)
 
+    // Footer
+    footer.footer
+      .container
+        .footer-bottom
+          p &copy; 2025 Shail K Patel &middot; Crafted out of boredom.
+          p
+            a(href="https://github.com/ShailKPatel/Raddiwala", target="_blank", rel="noopener noreferrer") GitHub Repo
+            span &middot; MIT License
+
     script(src="/js/main.js")
     script.
       // Execute immediately without waiting for DOM

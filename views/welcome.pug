@@ -11,9 +11,7 @@ html(lang="en")
     if user
       nav.navbar
         .nav-container
-          .nav-logo
-            img(src="/logo.png", alt="RaddiWala Logo", onclick="window.location.href='/'")
-            span RaddiWala
+          .nav-logo(onclick="window.location.href='/'") RaddiWala
           .nav-menu
             if user.role === 'customer'
               a.nav-link(href="/customer/dashboard") Dashboard
@@ -35,14 +33,11 @@ html(lang="en")
     main.main-content
       // Hero Section
       section.hero
-        .hero-content
-          .hero-logo
-            img(src="/logo.png", alt="RaddiWala Logo")
-          h1.hero-title Welcome to RaddiWala
-          p.hero-subtitle Connecting You with Scrap Collectors for a Greener Tomorrow
-          .hero-description
-            p Transform your waste into value while contributing to environmental sustainability.
-              | RaddiWala makes it easy to sell your scrap materials to verified collectors in your area.
+        .container
+          .hero-content
+            h1.hero-title Welcome to RaddiWala
+            p.hero-subtitle Connecting You with Scrap Collectors for a Greener Tomorrow
+            p.hero-description Transform your waste into value while contributing to environmental sustainability. RaddiWala makes it easy to sell your scrap materials to verified collectors in your area.
 
           if !user
             .hero-actions
@@ -65,71 +60,58 @@ html(lang="en")
             .feature-card
               .feature-icon
                 i.fas.fa-camera
-              h3 1. Upload Photos
-              p Take photos of your scrap materials and specify the type and approximate weight.
+              h3 Upload Photos
+              p Take photos of your scrap materials and specify the type and approximate weight
 
             .feature-card
               .feature-icon
                 i.fas.fa-gavel
-              h3 2. Receive Bids
-              p Local scrap collectors will bid on your materials with competitive prices.
+              h3 Receive Bids
+              p Local scrap collectors will bid on your materials with competitive prices
 
             .feature-card
               .feature-icon
                 i.fas.fa-handshake
-              h3 3. Accept & Schedule
-              p Choose the best offer and schedule a convenient pickup time.
+              h3 Accept & Schedule
+              p Choose the best offer and schedule a convenient pickup time
+
+            .feature-card
+              .feature-icon
+                i.fas.fa-truck
+              h3 Doorstep Pickup
+              p Professional collectors arrive at your location for hassle-free pickup
 
             .feature-card
               .feature-icon
                 i.fas.fa-star
-              h3 4. Rate & Review
-              p Complete the transaction and rate your experience for future reference.
+              h3 Rate & Review
+              p Complete the transaction and rate your experience for future reference
 
-      // Benefits Section
-      section.benefits
-        .container
-          .benefits-content
-            .benefits-text
-              h2 Why Choose RaddiWala?
-              .benefit-list
-                .benefit-item
-                  i.fas.fa-check-circle
-                  span Get the best prices for your scrap materials
-                .benefit-item
-                  i.fas.fa-check-circle
-                  span Verified and rated scrap collectors
-                .benefit-item
-                  i.fas.fa-check-circle
-                  span Convenient doorstep pickup service
-                .benefit-item
-                  i.fas.fa-check-circle
-                  span Contribute to environmental sustainability
-                .benefit-item
-                  i.fas.fa-check-circle
-                  span Secure and transparent transactions
-            .benefits-image
-              i.fas.fa-recycle.benefits-icon
+            .feature-card
+              .feature-icon
+                i.fas.fa-shield-alt
+              h3 Secure Payments
+              p Safe and transparent payment processing with verified collectors
+
+      
 
       // Environmental Impact Section
       section.environmental-impact
         .container
           h2.section-title Our Environmental Impact
-          .impact-grid
-            .impact-card
-              h3 Waste Recycled
-              .impact-number 10,000+
-              p Kilograms of waste diverted from landfills
-
-            .impact-card
-              h3 CO2 Reduced
-              .impact-number 5,000+
-              p Kilograms of CO2 emissions prevented
-
-            .impact-card
-              h3 Trees Saved
-              .impact-number 200+
-              p Trees equivalent saved through recycling
+          .environmental-grid
+            .environmental-card
+              .stat-number 10,000+
+              .stat-label KG Scrap Diverted from Landfills
+              .stat-description Every kilogram collected is waste kept out of open dumps and given a new life through recycling.
+            .environmental-card
+              .stat-number 5,000+
+              .stat-label KG CO₂ Emissions Avoided
+              .stat-description Recycling scrap metal, paper, and plastic prevents the massive emissions that would have been released if they were newly manufactured.
+            .environmental-card
+              .stat-number 200+
+              .stat-label Trees Preserved
+              .stat-description By recycling paper waste alone, we save trees from being cut down, keeping green cover intact.
 
       // Call to Action
       if !user
@@ -140,28 +122,16 @@ html(lang="en")
               p Join thousands of users who are already contributing to a cleaner environment
               .cta-actions
                 a.btn.btn-primary.btn-large(href="/signup") Sign Up Now
-                a.btn.btn-secondary.btn-large(href="/login") Login
+                a.btn.btn-primary.btn-large(href="/login") Login
 
     // Footer
     footer.footer
       .container
-        .footer-content
-          .footer-section
-            h4 RaddiWala
-            p Connecting you with scrap collectors for a greener tomorrow.
-          .footer-section
-            h4 Quick Links
-            a(href="/") Home
-            a(href="/about") About Us
-            a(href="/contact") Contact
-            a(href="/api/debug") Debug
-          .footer-section
-            h4 Support
-            a(href="/help") Help Center
-            a(href="/privacy") Privacy Policy
-            a(href="/terms") Terms of Service
         .footer-bottom
-          p &copy; 2024 RaddiWala. All rights reserved.
+          p
+          p &copy; 2025 Shail K Patel &middot; Crafted out of boredom.
+            a(href="https://github.com/ShailKPatel/Raddiwala", target="_blank", rel="noopener noreferrer") GitHub Repo
+            span &middot; MIT License
 
     script(src="/js/main.js")
     script.

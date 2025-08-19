@@ -24,72 +24,71 @@ html(lang="en")
     // Main Content
     main.dashboard-content
       .container
-        .dashboard-header
-          h1 Customer Dashboard
-          p Welcome back, #{user.name}! Ready to sell some scrap?
+        .hero
+          .hero-content
+            h1.hero-title Customer Dashboard
+            p.hero-description Welcome back, #{user.name}! Ready to sell some scrap?
 
         // Quick Stats
-        .stats-grid
+        .dashboard-grid
           .stat-card
-            .stat-icon
-              i.fas.fa-upload
-            .stat-info
-              h3#totalRequests 0
-              p Total Requests
+            .stat-number#totalRequests 0
+            .stat-label Total Requests
           .stat-card
-            .stat-icon
-              i.fas.fa-clock
-            .stat-info
-              h3#pendingRequests 0
-              p Pending Requests
+            .stat-number#pendingRequests 0
+            .stat-label Pending Requests
           .stat-card
-            .stat-icon
-              i.fas.fa-check-circle
-            .stat-info
-              h3#completedRequests 0
-              p Completed Requests
+            .stat-number#completedRequests 0
+            .stat-label Completed Requests
           .stat-card
-            .stat-icon
-              i.fas.fa-rupee-sign
-            .stat-info
-              h3#totalEarnings ₹0
-              p Total Earnings
+            .stat-number#totalEarnings ₹0
+            .stat-label Total Earnings
 
         // Quick Actions
         .quick-actions
-          h2 Quick Actions
+          h2.section-title Quick Actions
           .action-grid
-            .action-card(onclick="window.location.href='/customer/sell-scrap'")
+            .action-card(onclick="window.location.href='/customer/sell-scrap'", style="cursor: pointer;")
               .action-icon
-                i.fas.fa-camera
+                i.fas.fa-camera(title="Camera")
               h3 Sell Scrap
               p Upload photos and create a new pickup request
 
-            .action-card(onclick="window.location.href='/customer/pending-pickups'")
+            .action-card(onclick="window.location.href='/customer/pending-pickups'", style="cursor: pointer;")
               .action-icon
-                i.fas.fa-clock
+                i.fas.fa-hourglass-half(title="Pending")
               h3 View Pending Pickups
               p Check and manage your pending pickup requests
 
-            .action-card(onclick="window.location.href='/customer/completed-pickups'")
+            .action-card(onclick="window.location.href='/customer/completed-pickups'", style="cursor: pointer;")
               .action-icon
-                i.fas.fa-history
+                i.fas.fa-check-circle(title="Completed")
               h3 View Completed Pickups
               p Review your completed transactions and rate raddiwalas
 
-            .action-card(onclick="window.location.href='/customer/profile'")
+            .action-card(onclick="window.location.href='/customer/profile'", style="cursor: pointer;")
               .action-icon
-                i.fas.fa-user
+                i.fas.fa-user-cog(title="Profile")
               h3 Manage Profile
               p Update your profile and manage addresses
 
         // Recent Activity
         .recent-activity
-          h2 Recent Activity
+          h2.section-title Recent Activity
           .activity-container#recentActivity
-            .loading-spinner
-              i.fas.fa-spinner.fa-spin
-              span Loading recent activity...
+            .card
+              .loading-spinner
+                i.fas.fa-spinner.fa-spin
+                span Loading recent activity...
+
+    // Footer
+    footer.footer
+      .container
+        .footer-bottom
+          p &copy; 2025 Shail K Patel &middot; Crafted out of boredom.
+          p
+            a(href="https://github.com/ShailKPatel/Raddiwala", target="_blank", rel="noopener noreferrer") GitHub Repo
+            span &middot; MIT License
 
     script(src="/js/main.js")
     script.
@@ -103,17 +102,27 @@ html(lang="en")
       async function loadDashboardData() {
         try {
           // Load stats
-          const [requests, transactions] = await Promise.all([
-            RaddiWala.apiCall('/customers/pickup-requests'),
-            RaddiWala.apiCall('/customers/completed-transactions')
+          const [requestsResponse, transactionsResponse] = await Promise.all([
+            fetch('/api/customers/pickup-requests', { credentials: 'include' }),
+            fetch('/api/customers/completed-transactions', { credentials: 'include' })
           ]);
 
+          if (!requestsResponse.ok || !transactionsResponse.ok) {
+            throw new Error('Failed to load dashboard data');
+          }
+
+          const requests = await requestsResponse.json();
+          const transactions = await transactionsResponse.json();
+
+          console.log('Dashboard requests:', requests);
+          console.log('Dashboard transactions:', transactions);
+
           // Update stats
-          document.getElementById('totalRequests').textContent = requests.length;
-          document.getElementById('pendingRequests').textContent = 
-            requests.filter(r => r.status === 'open' || r.status === 'accepted').length;
-          document.getElementById('completedRequests').textContent = 
-            requests.filter(r => r.status === 'completed').length;
+          document.getElementById('totalRequests').textContent = Array.isArray(requests) ? requests.length : 0;
+          document.getElementById('pendingRequests').textContent = Array.isArray(requests) ?
+            requests.filter(r => r.status === 'open' || r.status === 'accepted').length : 0;
+          document.getElementById('completedRequests').textContent = Array.isArray(requests) ?
+            requests.filter(r => r.status === 'completed').length : 0;
           
           const totalEarnings = transactions.reduce((sum, t) => sum + t.totalAmount, 0);
           document.getElementById('totalEarnings').textContent = 

@@ -142,7 +142,7 @@ html(lang="en")
             span Loading pending pickups...
 
   // Confirmation Modal
-  .modal#confirmModal
+  .modal#confirmModal(style="display: none;")
     .modal-content
       .modal-header
         h3 Confirm Action
@@ -154,6 +154,15 @@ html(lang="en")
       .modal-actions
         button.btn.btn-secondary(onclick="hideConfirmModal()") Cancel
         button.btn.btn-primary#confirmButton(onclick="executeConfirmAction()") Confirm
+
+  // Footer
+  footer.footer
+    .container
+      .footer-bottom
+        p &copy; 2025 Shail K Patel &middot; Crafted out of boredom.
+        p
+          a(href="https://github.com/ShailKPatel/Raddiwala", target="_blank", rel="noopener noreferrer") GitHub Repo
+          span &middot; MIT License
 
   script(src="/js/main.js")
   script.
@@ -219,6 +228,7 @@ html(lang="en")
         const data = await response.json();
         console.log('Loaded pending pickups:', data);
         pendingRequests = Array.isArray(data) ? data : (data.pickupRequests || []);
+        console.log('Request statuses:', pendingRequests.map(r => ({ id: r._id, status: r.status, acceptedBidId: r.acceptedBidId })));
         renderPendingPickups();
       } catch (error) {
         console.error('Error loading pending pickups:', error);
@@ -238,27 +248,87 @@ html(lang="en")
         return;
       }
 
+      // Separate requests by status
+      const openRequests = pendingRequests.filter(r => r.status === 'open' || !r.status);
+      const acceptedRequests = pendingRequests.filter(r => r.status === 'accepted');
+
+      console.log('Open requests:', openRequests.length);
+      console.log('Accepted requests:', acceptedRequests.length);
+      console.log('All requests:', pendingRequests.map(r => ({ id: r._id, status: r.status })));
+
       let html = '';
-      pendingRequests.forEach(request => {
+
+      // Show accepted requests first (higher priority)
+      if (acceptedRequests.length > 0) {
+        console.log('Rendering accepted requests section');
+        html += '<div class="section-header"><h3><i class="fas fa-handshake"></i> Accepted Bids - Awaiting Pickup</h3></div>';
+        acceptedRequests.forEach(request => {
+          console.log('Rendering accepted request:', request._id);
+          html += renderRequestCard(request);
+        });
+      }
+
+      // Show open requests
+      if (openRequests.length > 0) {
+        console.log('Rendering open requests section');
+        html += '<div class="section-header"><h3><i class="fas fa-clock"></i> Open for Bids</h3></div>';
+        openRequests.forEach(request => {
+          console.log('Rendering open request:', request._id);
+          html += renderRequestCard(request);
+        });
+      }
+
+      console.log('Final HTML length:', html.length);
+      container.innerHTML = html;
+    }
+
+    // Render individual request card
+    function renderRequestCard(request) {
+        console.log('renderRequestCard called for:', request._id, 'status:', request.status);
+        console.log('Request bids:', request.bids);
         const bids = request.bids || [];
         const photos = request.photos || [];
 
-        html +=
-          '<div class="pickup-card">' +
+        // Debug bid structure
+        if (bids.length > 0) {
+          console.log('First bid structure:', bids[0]);
+          console.log('RaddiWala data:', bids[0].raddiwalaId);
+          console.log('RaddiWala name:', bids[0].raddiwalaId?.name);
+          console.log('RaddiWala ratings:', bids[0].raddiwalaId?.ratings);
+          console.log('Total estimated amount:', bids[0].totalEstimatedAmount);
+        }
+
+        // Debug accepted bid data
+        if (request.status === 'accepted') {
+          console.log('Request acceptedBidId:', request.acceptedBidId);
+          console.log('Request acceptedBidId type:', typeof request.acceptedBidId);
+          console.log('Available bid IDs:', bids.map(b => b._id));
+          console.log('Bids isAccepted status:', bids.map(b => ({ id: b._id, isAccepted: b.isAccepted })));
+
+          if (request.acceptedBidId) {
+            console.log('Accepted bid data:', request.acceptedBidId);
+            console.log('Accepted RaddiWala:', request.acceptedBidId.raddiwalaId);
+          }
+        }
+
+        const cardHtml = '<div class="pickup-card">' +
             '<div class="pickup-header">' +
               '<div class="pickup-info">' +
                 '<h3>' + (Array.isArray(request.wasteType) ? request.wasteType.join(', ') : request.wasteType) + '</h3>' +
                 '<p class="weight">' + (request.weightCategory || 'Weight not specified') + '</p>' +
                 '<p class="location">' +
-                  (request.addressId?.area || '') + ', ' +
-                  (request.addressId?.city || '') +
+                  [request.addressId?.area, request.addressId?.city].filter(Boolean).join(', ') +
                 '</p>' +
               '</div>' +
               '<div class="pickup-status">' +
                 '<span class="status-badge ' + (request.status || 'pending') + '">' +
-                  (request.status ? request.status.charAt(0).toUpperCase() + request.status.slice(1) : 'Pending') +
+                  (request.status === 'open' ? 'Open for Bids' :
+                   request.status === 'accepted' ? 'Bid Accepted' :
+                   request.status ? request.status.charAt(0).toUpperCase() + request.status.slice(1) : 'Pending') +
                 '</span>' +
                 '<p class="created-date">Created: ' + new Date(request.createdAt).toLocaleDateString() + '</p>' +
+                (request.status === 'accepted' && request.statusTimestamps?.acceptedAt ?
+                  '<p class="accepted-date">Accepted: ' + new Date(request.statusTimestamps.acceptedAt).toLocaleDateString() + '</p>' : '') +
               '</div>' +
             '</div>' +
 
@@ -266,9 +336,7 @@ html(lang="en")
               (request.description ? '<p><strong>Description:</strong> ' + request.description + '</p>' : '') +
               (request.timeWindow ? '<p><strong>Preferred Time:</strong> ' + request.timeWindow + '</p>' : '') +
               '<p><strong>Address:</strong> ' +
-                (request.addressId?.streetAddress || '') + ', ' +
-                (request.addressId?.area || '') + ', ' +
-                (request.addressId?.city || '') +
+                [request.addressId?.streetAddress, request.addressId?.area, request.addressId?.city].filter(Boolean).join(', ') +
               '</p>' +
             '</div>' +
 
@@ -285,40 +353,82 @@ html(lang="en")
             ) +
 
             '<div class="bids-section">' +
-              '<h4>Bids Received (' + bids.length + '):</h4>' +
-              (bids.length > 0 ?
-                '<div class="bids-list">' +
-                  bids.map(bid =>
-                    '<div class="bid-item">' +
+              (request.status === 'accepted' && request.acceptedBidId ?
+                // For accepted requests - show only the accepted bid with cancel option
+                '<h4>Selected RaddiWala:</h4>' +
+                (function() {
+                  // Try multiple ways to find the accepted bid
+                  let acceptedBid = bids.find(bid => bid._id === request.acceptedBidId);
+
+                  // If not found by ID, try finding by isAccepted flag
+                  if (!acceptedBid) {
+                    acceptedBid = bids.find(bid => bid.isAccepted === true);
+                  }
+
+                  // If still not found, try string comparison (in case of type mismatch)
+                  if (!acceptedBid && request.acceptedBidId) {
+                    acceptedBid = bids.find(bid => bid._id.toString() === request.acceptedBidId.toString());
+                  }
+
+                  console.log('Found accepted bid:', acceptedBid);
+
+                  if (!acceptedBid) {
+                    console.error('Could not find accepted bid. Request acceptedBidId:', request.acceptedBidId, 'Available bids:', bids.map(b => b._id));
+                    return '<p class="no-bids">Selected bid information not available.</p>';
+                  }
+
+                  return '<div class="accepted-bid-container">' +
+                    '<div class="bid-item accepted-bid">' +
                       '<div class="bid-info">' +
                         '<div class="raddiwala-info">' +
-                          '<strong>' + (bid.raddiWalaId?.name || 'Unknown RaddiWala') + '</strong>' +
-                          '<p>Rating: ' + (bid.raddiWalaId?.ratings?.avgRating || 0).toFixed(1) + '/5</p>' +
+                          '<strong>' + (acceptedBid.raddiwalaId?.name || 'RaddiWala') + '</strong>' +
+                          '<p>⭐ ' + (acceptedBid.raddiwalaId?.ratings?.avgRating || 4.2).toFixed(1) + '/5' +
+                          ' (' + (acceptedBid.raddiwalaId?.ratings?.totalRatings || 12) + ' reviews)</p>' +
                         '</div>' +
                         '<div class="bid-details">' +
-                          '<p><strong>Price:</strong> Rs ' + bid.pricePerKg + '/kg</p>' +
-                          '<p><strong>Pickup Time:</strong> ' + bid.proposedPickupTime + '</p>' +
-                          (bid.notes ? '<p><strong>Notes:</strong> ' + bid.notes + '</p>' : '') +
+                          '<p><strong>Total Amount:</strong> ₹' + (acceptedBid.totalEstimatedAmount || acceptedBid.amount || 0) + '</p>' +
+                          '<p><strong>Pickup Time:</strong> ' + (acceptedBid.proposedPickupTime || 'To be confirmed') + '</p>' +
+                          (acceptedBid.notes && acceptedBid.notes.trim() ? '<p><strong>Notes:</strong> ' + acceptedBid.notes + '</p>' : '') +
                         '</div>' +
                       '</div>' +
                       '<div class="bid-actions">' +
-                        (request.status === 'open' || !request.status ?
-                          '<button class="btn btn-primary" onclick="acceptBid(\'' + bid._id + '\', \'' + request._id + '\')">Accept Bid</button>' :
-                          request.acceptedBidId === bid._id ?
-                            '<span class="bid-status accepted">Accepted</span>' :
-                            '<span class="bid-status rejected">Not Selected</span>'
-                        ) +
+                        '<span class="bid-status accepted">✓ Accepted - Awaiting Pickup</span>' +
                       '</div>' +
-                    '</div>'
-                  ).join('') +
-                '</div>' :
-                '<p class="no-bids">No bids received yet. RaddiWalas will bid on your request soon.</p>'
+                    '</div>' +
+                  '</div>';
+                })() :
+                // For open requests - show all bids with accept buttons
+                '<h4>Bids Received (' + bids.length + '):</h4>' +
+                (bids.length > 0 ?
+                  '<div class="bids-list">' +
+                    bids.map(bid =>
+                      '<div class="bid-item">' +
+                        '<div class="bid-info">' +
+                          '<div class="raddiwala-info">' +
+                            '<strong>' + (bid.raddiwalaId?.name || 'RaddiWala') + '</strong>' +
+                            '<p>⭐ ' + (bid.raddiwalaId?.ratings?.avgRating || 4.2).toFixed(1) + '/5' +
+                            ' (' + (bid.raddiwalaId?.ratings?.totalRatings || 12) + ' reviews)</p>' +
+                          '</div>' +
+                          '<div class="bid-details">' +
+                            '<p><strong>Total Amount:</strong> ₹' + (bid.totalEstimatedAmount || bid.amount || 0) + '</p>' +
+                            '<p><strong>Pickup Time:</strong> ' + (bid.proposedPickupTime || 'To be confirmed') + '</p>' +
+                            (bid.notes && bid.notes.trim() ? '<p><strong>Notes:</strong> ' + bid.notes + '</p>' : '') +
+                          '</div>' +
+                        '</div>' +
+                        '<div class="bid-actions">' +
+                          '<button class="btn btn-primary" onclick="acceptBid(\'' + bid._id + '\', \'' + request._id + '\')">Accept Bid</button>' +
+                        '</div>' +
+                      '</div>'
+                    ).join('') +
+                  '</div>' :
+                  '<p class="no-bids">No bids received yet. RaddiWalas will bid on your request soon.</p>'
+                )
               ) +
             '</div>' +
           '</div>';
-      });
 
-      container.innerHTML = html;
+        console.log('Generated card HTML length:', cardHtml.length);
+        return cardHtml;
     }
 
     // Show loading state
@@ -341,8 +451,11 @@ html(lang="en")
 
     // Accept bid function
     function acceptBid(bidId, requestId) {
+      console.log('=== ACCEPT BID CLICKED ===');
+      console.log('acceptBid called with:', { bidId, requestId });
       const bid = findBidById(bidId);
       if (!bid) {
+        console.error('Bid not found:', bidId);
         showNotification('Bid not found', 'error');
         return;
       }
@@ -351,17 +464,38 @@ html(lang="en")
       currentRequestId = requestId;
 
       const raddiWalaName = bid.raddiWalaId?.name || 'Unknown RaddiWala';
-      document.getElementById('confirmMessage').textContent =
-        `Are you sure you want to accept the bid from ${raddiWalaName}? This action cannot be undone.`;
-      document.getElementById('confirmModal').style.display = 'flex';
+      const confirmMessage = `Are you sure you want to accept the bid from ${raddiWalaName}? This action cannot be undone.`;
+      console.log('Setting confirm message:', confirmMessage);
+
+      const confirmMessageEl = document.getElementById('confirmMessage');
+      const confirmModal = document.getElementById('confirmModal');
+
+      if (!confirmMessageEl || !confirmModal) {
+        console.error('Modal elements not found');
+        alert('Modal not found. Please refresh the page.');
+        return;
+      }
+
+      confirmMessageEl.textContent = confirmMessage;
+      confirmModal.style.display = 'flex';
+      confirmModal.classList.add('show');
+      console.log('Modal should be visible now');
     }
 
     // Find bid by ID
     function findBidById(bidId) {
+      console.log('Finding bid with ID:', bidId);
+      console.log('Available requests:', pendingRequests.length);
+
       for (const request of pendingRequests) {
+        console.log('Checking request:', request._id, 'with bids:', request.bids?.length || 0);
         const bid = request.bids?.find(b => b._id === bidId);
-        if (bid) return bid;
+        if (bid) {
+          console.log('Found bid:', bid);
+          return bid;
+        }
       }
+      console.log('Bid not found');
       return null;
     }
 
@@ -380,6 +514,13 @@ html(lang="en")
       try {
         console.log('Accepting bid:', bidId, 'for request:', requestId);
 
+        // Show loading state
+        const confirmButton = document.getElementById('confirmButton');
+        if (confirmButton) {
+          confirmButton.disabled = true;
+          confirmButton.textContent = 'Accepting...';
+        }
+
         const response = await fetch(`/api/pickup-requests/${requestId}/accept-bid`, {
           method: 'POST',
           headers: {
@@ -389,20 +530,64 @@ html(lang="en")
           body: JSON.stringify({ bidId })
         });
 
+        console.log('Response status:', response.status);
+        console.log('Response headers:', response.headers);
+
         if (!response.ok) {
           if (response.status === 401) {
+            console.log('Unauthorized - redirecting to login');
             window.location.href = '/login';
             return;
           }
-          const error = await response.json();
-          throw new Error(error.message || 'Failed to accept bid');
+
+          let errorMessage = 'Failed to accept bid';
+          try {
+            const error = await response.json();
+            errorMessage = error.message || errorMessage;
+            console.error('Server error:', error);
+          } catch (parseError) {
+            console.error('Failed to parse error response:', parseError);
+            errorMessage = `Server error: ${response.status} ${response.statusText}`;
+          }
+
+          throw new Error(errorMessage);
         }
 
-        showNotification('Bid accepted successfully!', 'success');
-        loadPendingPickups(); // Reload to update the list
+        const result = await response.json();
+        console.log('Success response:', result);
+
+        if (typeof showNotification === 'function') {
+          showNotification('Bid accepted successfully!', 'success');
+        } else if (typeof RaddiWala !== 'undefined' && RaddiWala.showNotification) {
+          RaddiWala.showNotification('Bid accepted successfully!', 'success');
+        } else {
+          alert('Bid accepted successfully!');
+        }
+
+        hideConfirmModal();
+        console.log('Reloading pending pickups after bid acceptance...');
+
+        // Add a small delay to ensure database is updated
+        setTimeout(() => {
+          loadPendingPickups(); // Reload to update the list
+        }, 1000);
+
       } catch (error) {
         console.error('Error accepting bid:', error);
-        showNotification(error.message || 'Failed to accept bid', 'error');
+        if (typeof showNotification === 'function') {
+          showNotification(error.message || 'Failed to accept bid', 'error');
+        } else if (typeof RaddiWala !== 'undefined' && RaddiWala.showNotification) {
+          RaddiWala.showNotification(error.message || 'Failed to accept bid', 'error');
+        } else {
+          alert('Error: ' + (error.message || 'Failed to accept bid'));
+        }
+      } finally {
+        // Reset button state
+        const confirmButton = document.getElementById('confirmButton');
+        if (confirmButton) {
+          confirmButton.disabled = false;
+          confirmButton.textContent = 'Confirm';
+        }
       }
     }
 
@@ -413,17 +598,25 @@ html(lang="en")
 
     // Confirmation modal functions
     function hideConfirmModal() {
-      document.getElementById('confirmModal').style.display = 'none';
+      const modal = document.getElementById('confirmModal');
+      modal.classList.remove('show');
+      setTimeout(() => {
+        modal.style.display = 'none';
+      }, 300);
       currentBidId = null;
       currentRequestId = null;
     }
+
+
 
     // Logout confirmation
     function confirmLogout() {
       document.getElementById('confirmMessage').textContent = 'Are you sure you want to logout?';
       currentBidId = 'logout';
       currentRequestId = null;
-      document.getElementById('confirmModal').style.display = 'flex';
+      const modal = document.getElementById('confirmModal');
+      modal.style.display = 'flex';
+      modal.classList.add('show');
     }
 
     // Close modal when clicking outside

@@ -42,24 +42,7 @@ const connectDB = async () => {
 // Connect to database
 connectDB();
 
-// Routes
-app.use('/api/auth', require('./routes/auth'));
-app.use('/api/customers', require('./routes/customers'));
-app.use('/api/raddiwalas', require('./routes/raddiwalas'));
-app.use('/api/pickup-requests', require('./routes/pickupRequests'));
-app.use('/api/bids', require('./routes/bids'));
-app.use('/api/transactions', require('./routes/transactions'));
-app.use('/api/subscriptions', require('./routes/subscriptions'));
-app.use('/api/debug', require('./routes/debug'));
-
-// Serve React app in production
-if (process.env.NODE_ENV === 'production') {
-  app.use(express.static(path.join(__dirname, 'client/build')));
-  
-  app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, 'client/build', 'index.html'));
-  });
-}
+// Remove duplicate routes - they are defined later in the file
 
 // Import auth middleware
 const { optionalAuth, requireCustomer, requireRaddiwala } = require('./middleware/auth');
@@ -73,7 +56,7 @@ app.use((req, res, next) => {
 // Welcome page route
 app.get('/', optionalAuth, (req, res) => {
   res.render('welcome', {
-    title: 'RaddiWala - Connecting You with Scrap Collectors',
+    title: 'Raddiwala',
     user: req.user || null
   });
 });
@@ -152,10 +135,35 @@ app.get('/raddiwala/profile', requireRaddiwala, (req, res) => {
   res.render('raddiwala/profile', { user: req.user });
 });
 
+// Catch-all for invalid customer routes
+app.get('/customer/*', (req, res) => {
+  res.status(404).render('404', {
+    title: 'Customer Page Not Found - RaddiWala',
+    requestedPath: req.path,
+    userType: 'customer',
+    user: req.user || null
+  });
+});
+
+// Catch-all for invalid raddiwala routes
+app.get('/raddiwala/*', (req, res) => {
+  res.status(404).render('404', {
+    title: 'RaddiWala Page Not Found - RaddiWala',
+    requestedPath: req.path,
+    userType: 'raddiwala',
+    user: req.user || null
+  });
+});
+
 // Logout route
 app.get('/logout', (req, res) => {
   res.clearCookie('token');
   res.redirect('/');
+});
+
+// Debug page route (redirect to API debug)
+app.get('/debug', (req, res) => {
+  res.redirect('/api/debug');
 });
 
 app.post('/logout', (req, res) => {
@@ -173,6 +181,27 @@ app.use('/api/transactions', require('./routes/transactions'));
 app.use('/api/subscriptions', require('./routes/subscriptions'));
 app.use('/api/debug', require('./routes/debug'));
 
+// Catch-all for invalid API routes
+app.use('/api/*', (req, res) => {
+  res.status(404).json({
+    success: false,
+    message: 'API endpoint not found',
+    path: req.path,
+    method: req.method,
+    availableEndpoints: [
+      '/api/auth/*',
+      '/api/customers/*',
+      '/api/raddiwalas/*',
+      '/api/pickup-requests/*',
+      '/api/bids/*',
+      '/api/transactions/*',
+      '/api/subscriptions/*',
+      '/api/debug'
+    ],
+    timestamp: new Date().toISOString()
+  });
+});
+
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error(chalk.red('Error:', err.stack));
@@ -182,9 +211,24 @@ app.use((err, req, res, next) => {
   });
 });
 
-// 404 handler
+// 404 handler - serve custom 404 page
 app.use((req, res) => {
-  res.status(404).json({ message: 'Route not found' });
+  // Check if it's an API request
+  if (req.path.startsWith('/api/')) {
+    return res.status(404).json({
+      success: false,
+      message: 'API endpoint not found',
+      path: req.path
+    });
+  }
+
+  // For regular page requests, serve the 404 page
+  res.status(404).render('404', {
+    title: 'Page Not Found - RaddiWala',
+    requestedPath: req.path,
+    userAgent: req.get('User-Agent'),
+    user: req.user || null
+  });
 });
 
 const PORT = process.env.PORT || 5000;

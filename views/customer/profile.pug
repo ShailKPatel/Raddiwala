@@ -29,130 +29,118 @@ html(lang="en")
           h1 Profile Management
           p Update your profile information and manage addresses
 
-        .profile-container
-          // Profile Overview
-          .profile-overview
-            .profile-card
-              .profile-header
-                .profile-avatar
-                  img#profileImage(src="/images/default-avatar.svg", alt="Profile Picture", style="display: none;")
-                  i#profileIcon.fas.fa-user-circle
-                  .avatar-upload
-                    input#profilePictureInput(type="file", accept="image/*", style="display: none;")
-                    button.btn.btn-sm.btn-secondary(onclick="document.getElementById('profilePictureInput').click()")
-                      i.fas.fa-camera
-                      span Change Photo
-                .profile-info
-                  h2#profileName Loading...
-                  p#profileEmail Loading...
-                  .profile-rating
-                    span#profileRating
-                    span#profileReviews
-              
-              .profile-stats
-                .stat-item
-                  span.stat-value#totalRequests 0
-                  span.stat-label Total Requests
-                .stat-item
-                  span.stat-value#completedRequests 0
-                  span.stat-label Completed
-                .stat-item
-                  span.stat-value#totalEarnings ₹0
-                  span.stat-label Total Earnings
+        // Profile Overview Card
+        .card
+          .profile-header-section
+            .profile-avatar-container
+              .profile-avatar
+                img#profileImage(src="/images/default-avatar.svg", alt="Profile Picture", style="display: none;")
+                i#profileIcon.fas.fa-user-circle
+              .profile-info
+                h2#profileName Loading...
+                p#profileEmail Loading...
+                .profile-rating
+                  span#profileRating
+                  span#profileReviews
+            .profile-actions
+              input#profilePictureInput(type="file", accept="image/*", style="display: none;")
+              button.btn.btn-secondary(onclick="document.getElementById('profilePictureInput').click()")
+                i.fas.fa-camera
+                span Change Photo
 
-          // Profile Forms
-          .profile-forms
-            // Basic Information
-            .form-section
-              h3 Basic Information
-              form#profileForm
-                .form-row
-                  .form-group
-                    label(for="name") Full Name *
-                    input#name(type="text", required)
-                    .error-message#nameError
+        // Profile Stats
+        .dashboard-grid
+          .stat-card
+            .stat-number#totalRequests 0
+            .stat-label Total Requests
+          .stat-card
+            .stat-number#completedRequests 0
+            .stat-label Completed
+          .stat-card
+            .stat-number#totalEarnings ₹0
+            .stat-label Total Earnings
 
-                  .form-group
-                    label(for="phone") Phone Number *
-                    input#phone(type="tel", required)
-                    .error-message#phoneError
+        // Basic Information
+        .card
+          h3 Basic Information
+          form#profileForm
+            .form-group
+              label.form-label(for="name") Full Name *
+              input.form-input#name(type="text", required)
+              .error-message#nameError
 
-                .form-actions
-                  button.btn.btn-primary(type="submit") Update Profile
+            .form-group
+              label.form-label(for="phone") Phone Number *
+              input.form-input#phone(type="tel", required)
+              .error-message#phoneError
 
-            // Address Management
-            .form-section
-              h3 Address Management</h3>
-              .addresses-list#addressesList
-                .loading-spinner
-                  i.fas.fa-spinner.fa-spin
-                  span Loading addresses...
-              
-              .address-actions
-                button.btn.btn-primary(onclick="showAddAddressModal()") Add New Address
+            .form-actions
+              button.btn.btn-primary(type="submit") Update Profile
 
-            // Email Change
-            .form-section
-              h3 Change Email</h3>
-              form#emailForm
-                .form-group
-                  label(for="newEmail") New Email Address *
-                  input#newEmail(type="email", required)
-                  .error-message#newEmailError
+        // Address Management
+        .card
+          h3 Address Management
+          .addresses-list#addressesList
+            .loading-spinner
+              i.fas.fa-spinner.fa-spin
+              span Loading addresses...
 
-                .form-group#otpGroup(style="display: none;")
-                  label(for="emailOtp") Enter OTP *
-                  input#emailOtp(type="text", maxlength="4")
-                  .error-message#emailOtpError
-                  
-                  .development-mode#emailDevMode(style="display: none;")
-                    p.dev-notice Development Mode - OTP: 
-                      span#emailDevOTP
+          .form-actions
+            button.btn.btn-primary(onclick="showAddAddressModal()") Add New Address
 
-                .form-actions
-                  button.btn.btn-primary#emailSubmitBtn(type="submit") Send OTP
+        // Email Change
+        .card
+          h3 Change Email
+          .email-info
+            .email-display
+              .email-label Email Address
+              .email-value#currentEmail Loading...
+            button.btn.btn-primary(onclick="showEmailChangeModal()") Change Email
 
-            // Danger Zone
-            .form-section.danger-zone
-              h3 Danger Zone</h3>
-              .danger-content
-                .danger-item
-                  .danger-info
-                    h4 Delete Account
-                    p This action cannot be undone. All your data will be permanently deleted.
-                  button.btn.btn-danger(onclick="showDeleteConfirmation()") Delete Account
+        // Danger Zone
+        .card.danger-zone-card
+          h3 Danger Zone
+          .danger-content
+            .danger-item
+              .danger-info
+                h4 Delete Account
+                p This action cannot be undone. All your data will be permanently deleted.
+              .danger-actions
+                button.btn.btn-danger(onclick="showDeleteConfirmation()") Delete Account
 
     // Add Address Modal
-    .modal#addAddressModal
+    .modal#addAddressModal(style="display: none;")
       .modal-content
-        .modal-header
-          h3 Add New Address
-          button.modal-close(onclick="hideAddAddressModal()") &times;
-        
+        h3 Add New Address
+
         form#addAddressForm
           .form-group
-            label(for="newAddressLine") Address Line *
-            input#newAddressLine(type="text", required, placeholder="House/Shop number, Street name")
-          
+            label.form-label(for="newAddressLine") Address Line *
+            input.form-input#newAddressLine(type="text", required, placeholder="House/Shop number, Street name")
+            .error-message#streetAddressError
+
           .form-group
-            label(for="newAddressArea") Area *
-            input#newAddressArea(type="text", required, placeholder="Area/Locality")
-          
-          .form-row
-            .form-group
-              label(for="newAddressCity") City *
-              input#newAddressCity(type="text", required, placeholder="City")
-            
-            .form-group
-              label(for="newAddressPincode") Pincode *
-              input#newAddressPincode(type="text", required, maxlength="6", placeholder="6-digit pincode")
-          
+            label.form-label(for="newAddressArea") Area *
+            input.form-input#newAddressArea(type="text", required, placeholder="Area/Locality")
+            .error-message#areaError
+
           .form-group
-            label(for="newAddressLandmark") Landmark
-            input#newAddressLandmark(type="text", placeholder="Nearby landmark")
-          
-          .modal-actions
-            button.btn.btn-secondary(type="button", onclick="hideAddAddressModal()") Cancel
+            label.form-label(for="newAddressCity") City *
+            input.form-input#newAddressCity(type="text", required, placeholder="City")
+            .error-message#cityError
+
+          .form-group
+            label.form-label(for="newAddressPincode") Pincode *
+            input.form-input#newAddressPincode(type="text", required, maxlength="6", placeholder="6-digit pincode")
+            .error-message#pincodeError
+
+          .form-group
+            label.form-label(for="newAddressLandmark") Landmark
+            input.form-input#newAddressLandmark(type="text", placeholder="Nearby landmark")
+            .error-message#landmarkError
+
+          .form-actions
+            button.btn.btn-outline(type="button", onclick="hideAddAddressModal()") Cancel
             button.btn.btn-primary(type="submit") Add Address
 
     // Edit Address Modal
@@ -168,27 +156,67 @@ html(lang="en")
           .form-group
             label(for="editAddressLine") Address Line *
             input#editAddressLine(type="text", required)
-          
+            .error-message#editStreetAddressError
+
           .form-group
             label(for="editAddressArea") Area *
             input#editAddressArea(type="text", required)
-          
+            .error-message#editAreaError
+
           .form-row
             .form-group
               label(for="editAddressCity") City *
               input#editAddressCity(type="text", required)
-            
+              .error-message#editCityError
+
             .form-group
               label(for="editAddressPincode") Pincode *
               input#editAddressPincode(type="text", required, maxlength="6")
-          
+              .error-message#editPincodeError
+
           .form-group
             label(for="editAddressLandmark") Landmark
             input#editAddressLandmark(type="text")
+            .error-message#editLandmarkError
           
           .modal-actions
             button.btn.btn-secondary(type="button", onclick="hideEditAddressModal()") Cancel
             button.btn.btn-primary(type="submit") Update Address
+
+    // Email Change Modal
+    .modal#emailChangeModal(style="display: none;")
+      .modal-content
+        .modal-header
+          h3 Change Email Address
+          button.modal-close(onclick="hideEmailChangeModal()") &times;
+
+        .email-change-content
+          .step#emailStep
+            .form-group
+              label(for="newEmailInput") New Email Address *
+              input#newEmailInput(type="email", placeholder="Enter new email address", required)
+              .error-message#newEmailError
+            .form-actions
+              button.btn.btn-secondary(onclick="hideEmailChangeModal()") Cancel
+              button.btn.btn-primary(onclick="sendEmailOTP()") Send OTP
+
+          .step#otpStep(style="display: none;")
+            .otp-info
+              p OTP sent to:
+                strong#otpEmailDisplay
+              p Please check your email and enter the 4-digit code below:
+            .form-group
+              label(for="emailOtpInput") Enter OTP *
+              input#emailOtpInput(type="text", maxlength="4", placeholder="Enter 4-digit OTP")
+              .development-mode#emailDevMode(style="display: none;")
+                .dev-notice
+                  i.fas.fa-code
+                  span Debug Mode - OTP:
+                  strong#emailDevOTP
+              .error-message#emailOtpError
+            .form-actions
+              button.btn.btn-secondary(onclick="backToEmailStep()") Back
+              button.btn.btn-primary(onclick="verifyEmailOTP()") Verify & Update
 
     // Delete Confirmation Modal
     .modal#deleteModal
@@ -210,6 +238,15 @@ html(lang="en")
           button.btn.btn-secondary(onclick="hideDeleteModal()") Cancel
           button.btn.btn-danger#deleteConfirmBtn(onclick="confirmDelete()" disabled) Delete Account
 
+    // Footer
+    footer.footer
+      .container
+        .footer-bottom
+          p &copy; 2025 Shail K Patel &middot; Crafted out of boredom.
+          p
+            a(href="https://github.com/ShailKPatel/Raddiwala", target="_blank", rel="noopener noreferrer") GitHub Repo
+            span &middot; MIT License
+
     script(src="/js/main.js")
     script.
       let profileData = null;
@@ -220,25 +257,51 @@ html(lang="en")
       // Load profile data
       async function loadProfileData() {
         try {
-          const [profile, transactions] = await Promise.all([
-            RaddiWala.apiCall('/customers/profile'),
-            RaddiWala.apiCall('/customers/completed-transactions')
-          ]);
+          let profile, transactions, requests;
+
+          if (typeof RaddiWala !== 'undefined' && RaddiWala.apiCall) {
+            // Use RaddiWala.apiCall if available
+            [profile, transactions, requests] = await Promise.all([
+              RaddiWala.apiCall('/customers/profile'),
+              RaddiWala.apiCall('/customers/completed-transactions'),
+              RaddiWala.apiCall('/customers/pickup-requests')
+            ]);
+          } else {
+            // Fallback to fetch
+            const [profileResponse, transactionsResponse, requestsResponse] = await Promise.all([
+              fetch('/api/customers/profile', { credentials: 'include' }),
+              fetch('/api/customers/completed-transactions', { credentials: 'include' }),
+              fetch('/api/customers/pickup-requests', { credentials: 'include' })
+            ]);
+
+            profile = await profileResponse.json();
+            transactions = await transactionsResponse.json();
+            requests = await requestsResponse.json();
+          }
+
+          console.log('Profile data loaded:', { profile, transactions, requests });
 
           profileData = profile;
           userAddresses = profile.addresses || [];
-          populateProfileData(profile, transactions);
+          console.log('Loaded addresses:', userAddresses);
+          console.log('Number of addresses:', userAddresses.length);
+          populateProfileData(profile, transactions, requests);
           renderAddresses();
         } catch (error) {
           console.error('Failed to load profile data:', error);
-          RaddiWala.showNotification('Failed to load profile data', 'error');
+          if (typeof RaddiWala !== 'undefined' && RaddiWala.showNotification) {
+            RaddiWala.showNotification('Failed to load profile data', 'error');
+          } else {
+            alert('Failed to load profile data');
+          }
         }
       }
 
-      function populateProfileData(profile, transactions) {
+      function populateProfileData(profile, transactions, requests) {
         // Profile overview
         document.getElementById('profileName').textContent = profile.name;
         document.getElementById('profileEmail').textContent = profile.email;
+        document.getElementById('currentEmail').textContent = profile.email;
 
         // Profile picture
         const profileImage = document.getElementById('profileImage');
@@ -265,10 +328,16 @@ html(lang="en")
         }
 
         // Stats
+        console.log('Updating stats:', {
+          totalRequests: Array.isArray(requests) ? requests.length : 0,
+          completedRequests: transactions.length
+        });
+
+        document.getElementById('totalRequests').textContent = Array.isArray(requests) ? requests.length : 0;
         document.getElementById('completedRequests').textContent = transactions.length;
-        
+
         const totalEarnings = transactions.reduce((sum, t) => sum + t.totalAmount, 0);
-        document.getElementById('totalEarnings').textContent = 
+        document.getElementById('totalEarnings').textContent =
           RaddiWala.formatCurrency(totalEarnings);
 
         // Basic information form
@@ -295,8 +364,10 @@ html(lang="en")
       }
 
       function renderAddresses() {
+        console.log('=== RENDERING ADDRESSES ===');
+        console.log('userAddresses:', userAddresses);
         const container = document.getElementById('addressesList');
-        
+
         if (userAddresses.length === 0) {
           container.innerHTML = `
             <div class="no-addresses">
@@ -364,34 +435,84 @@ html(lang="en")
 
       // Address management functions
       function showAddAddressModal() {
+        console.log('showAddAddressModal called');
         if (userAddresses.length >= 3) {
-          RaddiWala.showNotification('Maximum 3 addresses allowed', 'warning');
+          if (typeof RaddiWala !== 'undefined' && RaddiWala.showNotification) {
+            RaddiWala.showNotification('Maximum 3 addresses allowed', 'warning');
+          } else {
+            alert('Maximum 3 addresses allowed');
+          }
           return;
         }
-        document.getElementById('addAddressModal').style.display = 'flex';
+        const modal = document.getElementById('addAddressModal');
+        if (modal) {
+          modal.style.display = 'flex';
+          modal.classList.add('show');
+          // Focus on first input
+          setTimeout(() => {
+            const firstInput = document.getElementById('newAddressLine');
+            if (firstInput) firstInput.focus();
+          }, 100);
+        } else {
+          console.error('Add address modal not found');
+        }
       }
 
       function hideAddAddressModal() {
-        document.getElementById('addAddressModal').style.display = 'none';
+        const modal = document.getElementById('addAddressModal');
+        modal.classList.remove('show');
+        setTimeout(() => {
+          modal.style.display = 'none';
+        }, 300);
         document.getElementById('addAddressForm').reset();
       }
 
       function editAddress(addressId) {
+        console.log('=== EDIT ADDRESS CLICKED ===');
+        console.log('Address ID:', addressId);
+        console.log('User addresses:', userAddresses);
+
         const address = userAddresses.find(a => a._id === addressId);
+        console.log('Found address:', address);
+
+        if (!address) {
+          console.error('Address not found!');
+          alert('Address not found. Please refresh the page.');
+          return;
+        }
+
         currentEditAddress = address;
-        
+
+        // Populate form fields
         document.getElementById('editAddressId').value = address._id;
-        document.getElementById('editAddressLine').value = address.line;
-        document.getElementById('editAddressArea').value = address.area;
-        document.getElementById('editAddressCity').value = address.city;
-        document.getElementById('editAddressPincode').value = address.pincode;
+        document.getElementById('editAddressLine').value = address.line || '';
+        document.getElementById('editAddressArea').value = address.area || '';
+        document.getElementById('editAddressCity').value = address.city || '';
+        document.getElementById('editAddressPincode').value = address.pincode || '';
         document.getElementById('editAddressLandmark').value = address.landmark || '';
-        
-        document.getElementById('editAddressModal').style.display = 'flex';
+
+        // Show modal
+        const modal = document.getElementById('editAddressModal');
+        console.log('Modal element:', modal);
+
+        if (!modal) {
+          console.error('Edit address modal not found!');
+          alert('Modal not found. Please refresh the page.');
+          return;
+        }
+
+        modal.style.display = 'flex';
+        modal.classList.add('show');
+        console.log('Modal should be visible now');
       }
 
       function hideEditAddressModal() {
-        document.getElementById('editAddressModal').style.display = 'none';
+        console.log('=== HIDING EDIT ADDRESS MODAL ===');
+        const modal = document.getElementById('editAddressModal');
+        modal.classList.remove('show');
+        setTimeout(() => {
+          modal.style.display = 'none';
+        }, 300);
         document.getElementById('editAddressForm').reset();
         currentEditAddress = null;
       }
@@ -415,46 +536,98 @@ html(lang="en")
       }
 
       // Add address form submission
-      document.getElementById('addAddressForm').addEventListener('submit', async function(e) {
-        e.preventDefault();
-        
-        const formData = {
-          line: document.getElementById('newAddressLine').value,
-          area: document.getElementById('newAddressArea').value,
-          city: document.getElementById('newAddressCity').value,
-          pincode: document.getElementById('newAddressPincode').value,
-          landmark: document.getElementById('newAddressLandmark').value
-        };
-        
-        try {
-          await RaddiWala.apiCall('/customers/addresses', {
-            method: 'POST',
-            body: JSON.stringify(formData)
+      document.addEventListener('DOMContentLoaded', function() {
+        const addAddressForm = document.getElementById('addAddressForm');
+        if (addAddressForm) {
+          addAddressForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            console.log('Add address form submitted');
+
+            const formData = {
+              line: document.getElementById('newAddressLine').value.trim(),
+              area: document.getElementById('newAddressArea').value.trim(),
+              city: document.getElementById('newAddressCity').value.trim(),
+              pincode: document.getElementById('newAddressPincode').value.trim(),
+              landmark: document.getElementById('newAddressLandmark').value.trim()
+            };
+
+            // Validate form data
+            if (!validateAddressForm(formData)) {
+              return;
+            }
+
+            try {
+              console.log('Sending address data:', formData);
+
+              if (typeof RaddiWala !== 'undefined' && RaddiWala.apiCall) {
+                await RaddiWala.apiCall('/customers/addresses', {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json'
+                  },
+                  body: JSON.stringify(formData)
+                });
+
+                if (RaddiWala.showNotification) {
+                  RaddiWala.showNotification('Address added successfully!', 'success');
+                } else {
+                  alert('Address added successfully!');
+                }
+              } else {
+                // Fallback to fetch if RaddiWala is not available
+                const response = await fetch('/api/customers/addresses', {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json'
+                  },
+                  body: JSON.stringify(formData)
+                });
+
+                if (!response.ok) {
+                  throw new Error('Failed to add address');
+                }
+
+                alert('Address added successfully!');
+              }
+
+              hideAddAddressModal();
+              loadProfileData(); // Reload data
+
+            } catch (error) {
+              console.error('Error adding address:', error);
+              if (typeof RaddiWala !== 'undefined' && RaddiWala.showNotification) {
+                RaddiWala.showNotification(error.message || 'Failed to add address', 'error');
+              } else {
+                alert('Error: ' + (error.message || 'Failed to add address'));
+              }
+            }
           });
-          
-          RaddiWala.showNotification('Address added successfully!', 'success');
-          hideAddAddressModal();
-          loadProfileData(); // Reload data
-          
-        } catch (error) {
-          RaddiWala.showNotification(error.message, 'error');
         }
       });
 
-      // Edit address form submission
-      document.getElementById('editAddressForm').addEventListener('submit', async function(e) {
+      // Edit address form submission - wrapped in DOM ready
+      document.addEventListener('DOMContentLoaded', function() {
+        const editAddressForm = document.getElementById('editAddressForm');
+        if (editAddressForm) {
+          editAddressForm.addEventListener('submit', async function(e) {
         e.preventDefault();
-        
+        console.log('=== EDIT ADDRESS FORM SUBMITTED ===');
+
         const formData = {
-          line: document.getElementById('editAddressLine').value,
-          area: document.getElementById('editAddressArea').value,
-          city: document.getElementById('editAddressCity').value,
-          pincode: document.getElementById('editAddressPincode').value,
-          landmark: document.getElementById('editAddressLandmark').value
+          line: document.getElementById('editAddressLine').value.trim(),
+          area: document.getElementById('editAddressArea').value.trim(),
+          city: document.getElementById('editAddressCity').value.trim(),
+          pincode: document.getElementById('editAddressPincode').value.trim(),
+          landmark: document.getElementById('editAddressLandmark').value.trim()
         };
-        
+
+        // Validate form data
+        if (!validateEditAddressForm(formData)) {
+          return;
+        }
+
         const addressId = document.getElementById('editAddressId').value;
-        
+
         try {
           await RaddiWala.apiCall(`/customers/addresses/${addressId}`, {
             method: 'PUT',
@@ -467,6 +640,8 @@ html(lang="en")
           
         } catch (error) {
           RaddiWala.showNotification(error.message, 'error');
+        }
+          });
         }
       });
 
@@ -521,17 +696,20 @@ html(lang="en")
 
       function validateProfileForm(formData) {
         let isValid = true;
-        
-        if (!formData.name || formData.name.trim().length < 2) {
-          showError('nameError', 'Name must be at least 2 characters long');
+        clearErrors();
+
+        // Validate name
+        if (!formData.name || !isValidName(formData.name)) {
+          showError('nameError', 'Name should be 2-50 characters and contain only letters and spaces');
           isValid = false;
         }
-        
-        if (!formData.phone || !RaddiWala.validatePhone(formData.phone)) {
-          showError('phoneError', 'Please enter a valid 10-digit mobile number');
+
+        // Validate phone
+        if (!formData.phone || !isValidPhone(formData.phone)) {
+          showError('phoneError', 'Please enter a valid 10-digit mobile number starting with 6-9');
           isValid = false;
         }
-        
+
         return isValid;
       }
 
@@ -551,5 +729,287 @@ html(lang="en")
         }
       }
 
+      // Email change modal functions
+      function showEmailChangeModal() {
+        console.log('=== SHOW EMAIL CHANGE MODAL CLICKED ===');
+        const modal = document.getElementById('emailChangeModal');
+        console.log('Modal element:', modal);
+
+        if (!modal) {
+          console.error('Email change modal not found!');
+          alert('Modal not found. Please refresh the page.');
+          return;
+        }
+
+        modal.style.display = 'flex';
+        modal.classList.add('show');
+
+        document.getElementById('emailStep').style.display = 'block';
+        document.getElementById('otpStep').style.display = 'none';
+        document.getElementById('newEmailInput').value = '';
+        document.getElementById('emailOtpInput').value = '';
+        clearEmailErrors();
+        console.log('Modal should be visible now with forced styles');
+      }
+
+      function hideEmailChangeModal() {
+        const modal = document.getElementById('emailChangeModal');
+        modal.classList.remove('show');
+        setTimeout(() => {
+          modal.style.display = 'none';
+        }, 300);
+        clearEmailErrors();
+      }
+
+      function backToEmailStep() {
+        document.getElementById('emailStep').style.display = 'block';
+        document.getElementById('otpStep').style.display = 'none';
+        clearEmailErrors();
+      }
+
+      async function sendEmailOTP() {
+        console.log('=== SEND EMAIL OTP CLICKED ===');
+        const newEmail = document.getElementById('newEmailInput').value.trim();
+        console.log('New email:', newEmail);
+
+        if (!newEmail) {
+          showEmailError('newEmailError', 'Please enter an email address');
+          return;
+        }
+
+        if (!isValidEmail(newEmail)) {
+          showEmailError('newEmailError', 'Please enter a valid email address');
+          return;
+        }
+
+        // Check if it's the same as current email
+        const currentEmail = document.getElementById('currentEmail').textContent;
+        if (newEmail === currentEmail) {
+          showEmailError('newEmailError', 'This is already your current email address');
+          return;
+        }
+
+        try {
+          console.log('Sending OTP request...');
+          const response = await fetch('/api/customers/send-email-otp', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ newEmail })
+          });
+
+          console.log('Response status:', response.status);
+          const data = await response.json();
+          console.log('Response data:', data);
+
+          if (response.ok) {
+            document.getElementById('otpEmailDisplay').textContent = newEmail;
+            document.getElementById('emailStep').style.display = 'none';
+            document.getElementById('otpStep').style.display = 'block';
+
+            // Show dev OTP if available
+            if (data.devOTP) {
+              document.getElementById('emailDevOTP').textContent = data.devOTP;
+              document.getElementById('emailDevMode').style.display = 'block';
+            }
+
+            if (typeof showNotification === 'function') {
+              showNotification('OTP sent to your new email address', 'success');
+            } else {
+              alert('OTP sent to your new email address');
+            }
+          } else {
+            // Handle specific error cases
+            if (data.message && data.message.includes('already in use')) {
+              showEmailError('newEmailError', 'This email is already registered. Please use a different email.');
+            } else {
+              showEmailError('newEmailError', data.message || 'Failed to send OTP');
+            }
+          }
+        } catch (error) {
+          console.error('Send OTP error:', error);
+          showEmailError('newEmailError', 'Network error. Please try again.');
+        }
+      }
+
+      async function verifyEmailOTP() {
+        const newEmail = document.getElementById('newEmailInput').value.trim();
+        const otp = document.getElementById('emailOtpInput').value.trim();
+
+        if (!otp) {
+          showEmailError('emailOtpError', 'Please enter the OTP');
+          return;
+        }
+
+        try {
+          const response = await fetch('/api/customers/verify-email-otp', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ newEmail, otp })
+          });
+
+          const data = await response.json();
+
+          if (response.ok) {
+            document.getElementById('currentEmail').textContent = newEmail;
+            hideEmailChangeModal();
+            showNotification('Email address updated successfully!', 'success');
+          } else {
+            showEmailError('emailOtpError', data.message || 'Invalid OTP');
+          }
+        } catch (error) {
+          showEmailError('emailOtpError', 'Network error. Please try again.');
+        }
+      }
+
+      function showEmailError(elementId, message) {
+        const errorElement = document.getElementById(elementId);
+        errorElement.textContent = message;
+        errorElement.style.display = 'block';
+      }
+
+      function clearEmailErrors() {
+        ['newEmailError', 'emailOtpError'].forEach(id => {
+          const element = document.getElementById(id);
+          element.textContent = '';
+          element.style.display = 'none';
+        });
+      }
+
+      function isValidEmail(email) {
+        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+      }
+
+      // Comprehensive validation functions
+      function isValidPhone(phone) {
+        // Indian phone number: 10 digits, can start with 6-9
+        return /^[6-9]\d{9}$/.test(phone);
+      }
+
+      function isValidPincode(pincode) {
+        // Indian pincode: 6 digits
+        return /^\d{6}$/.test(pincode);
+      }
+
+      function isValidName(name) {
+        // Name should be 2-50 characters, only letters and spaces
+        return /^[a-zA-Z\s]{2,50}$/.test(name.trim());
+      }
+
+
+
+      function validateAddressForm(formData) {
+        let isValid = true;
+        clearAddressErrors();
+
+        // Validate address line (using 'line' field name from form)
+        if (!formData.line || formData.line.trim().length < 5) {
+          showAddressError('streetAddressError', 'Address line should be at least 5 characters');
+          isValid = false;
+        }
+
+        // Validate area
+        if (!formData.area || formData.area.trim().length < 2) {
+          showAddressError('areaError', 'Area should be at least 2 characters');
+          isValid = false;
+        }
+
+        // Validate city
+        if (!formData.city || !isValidName(formData.city)) {
+          showAddressError('cityError', 'Please enter a valid city name');
+          isValid = false;
+        }
+
+        // Validate pincode
+        if (!formData.pincode || !isValidPincode(formData.pincode)) {
+          showAddressError('pincodeError', 'Please enter a valid 6-digit pincode');
+          isValid = false;
+        }
+
+        return isValid;
+      }
+
+      function showError(elementId, message) {
+        const errorElement = document.getElementById(elementId);
+        if (errorElement) {
+          errorElement.textContent = message;
+          errorElement.style.display = 'block';
+        }
+      }
+
+      function showAddressError(elementId, message) {
+        const errorElement = document.getElementById(elementId);
+        if (errorElement) {
+          errorElement.textContent = message;
+          errorElement.style.display = 'block';
+        }
+      }
+
+      function clearErrors() {
+        ['nameError', 'phoneError'].forEach(id => {
+          const element = document.getElementById(id);
+          if (element) {
+            element.textContent = '';
+            element.style.display = 'none';
+          }
+        });
+      }
+
+      function clearAddressErrors() {
+        ['streetAddressError', 'areaError', 'cityError', 'pincodeError', 'landmarkError'].forEach(id => {
+          const element = document.getElementById(id);
+          if (element) {
+            element.textContent = '';
+            element.style.display = 'none';
+          }
+        });
+      }
+
+      function validateEditAddressForm(formData) {
+        let isValid = true;
+        clearEditAddressErrors();
+
+        // Validate address line
+        if (!formData.line || formData.line.trim().length < 5) {
+          showAddressError('editStreetAddressError', 'Address line should be at least 5 characters');
+          isValid = false;
+        }
+
+        // Validate area
+        if (!formData.area || formData.area.trim().length < 2) {
+          showAddressError('editAreaError', 'Area should be at least 2 characters');
+          isValid = false;
+        }
+
+        // Validate city
+        if (!formData.city || !isValidName(formData.city)) {
+          showAddressError('editCityError', 'Please enter a valid city name');
+          isValid = false;
+        }
+
+        // Validate pincode
+        if (!formData.pincode || !isValidPincode(formData.pincode)) {
+          showAddressError('editPincodeError', 'Please enter a valid 6-digit pincode');
+          isValid = false;
+        }
+
+        return isValid;
+      }
+
+      function clearEditAddressErrors() {
+        ['editStreetAddressError', 'editAreaError', 'editCityError', 'editPincodeError', 'editLandmarkError'].forEach(id => {
+          const element = document.getElementById(id);
+          if (element) {
+            element.textContent = '';
+            element.style.display = 'none';
+          }
+        });
+      }
+
       // Load data when page loads
-      document.addEventListener('DOMContentLoaded', loadProfileData);
+      console.log('Customer profile page JavaScript loaded');
+      document.addEventListener('DOMContentLoaded', function() {
+        console.log('DOM content loaded, calling loadProfileData');
+        loadProfileData();
+      });

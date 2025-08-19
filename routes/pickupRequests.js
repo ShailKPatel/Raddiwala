@@ -221,7 +221,7 @@ router.post('/:id/accept-bid', requireCustomer, async (req, res) => {
 router.post('/:id/cancel', requireCustomer, async (req, res) => {
   try {
     const request = await PickupRequest.findById(req.params.id);
-    
+
     if (!request) {
       return res.status(404).json({ message: 'Pickup request not found' });
     }
@@ -231,15 +231,26 @@ router.post('/:id/cancel', requireCustomer, async (req, res) => {
       return res.status(403).json({ message: 'Access denied' });
     }
 
-    // Can't cancel if bid is already accepted
-    if (request.status === 'accepted') {
-      return res.status(400).json({ message: 'Cannot cancel request with accepted bid' });
+    // Can't cancel if already completed or in progress
+    if (request.status === 'completed' || request.status === 'in-progress') {
+      return res.status(400).json({ message: 'Cannot cancel pickup that is already in progress or completed' });
     }
 
-    await request.updateStatus('cancelled');
+    // If request has accepted bid, reset to open status and clear accepted bid
+    if (request.status === 'accepted' && request.acceptedBidId) {
+      request.status = 'open';
+      request.acceptedBidId = null;
+      request.statusTimestamps.acceptedAt = null;
+      await request.save();
 
-    res.json({ message: 'Pickup request cancelled successfully' });
+      res.json({ message: 'Pickup cancelled successfully. Your request is now open for new bids.' });
+    } else {
+      // For open requests, cancel completely
+      await request.updateStatus('cancelled');
+      res.json({ message: 'Pickup request cancelled successfully' });
+    }
   } catch (error) {
+    console.error('Cancel pickup error:', error);
     res.status(500).json({ message: 'Failed to cancel pickup request' });
   }
 });

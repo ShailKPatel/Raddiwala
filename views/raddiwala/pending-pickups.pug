@@ -161,7 +161,7 @@ html(lang="en")
             span Loading pending pickups...
 
     // Complete Pickup Modal
-    .modal#completeModal
+    .modal#completeModal(style="display: none;")
       .modal-content
         .modal-header
           h3 Complete Pickup
@@ -185,7 +185,7 @@ html(lang="en")
             button.btn.btn-primary(type="submit") Mark as Completed
 
     // Confirmation Modal
-    .modal#confirmModal
+    .modal#confirmModal(style="display: none;")
       .modal-content
         .modal-header
           h3 Confirm Action
@@ -198,8 +198,18 @@ html(lang="en")
           button.btn.btn-secondary(onclick="hideConfirmModal()") Cancel
           button.btn.btn-primary#confirmButton Confirm
 
+    // Footer
+    footer.footer
+      .container
+        .footer-bottom
+          p &copy; 2025 Shail K Patel &middot; Crafted out of boredom.
+          p
+            a(href="https://github.com/ShailKPatel/Raddiwala", target="_blank", rel="noopener noreferrer") GitHub Repo
+            span &middot; MIT License
+
     script(src="/js/main.js")
     script.
+      console.log('RaddiWala pending pickups page loaded');
       let pendingPickups = [];
       let currentPickup = null;
 
@@ -256,8 +266,8 @@ html(lang="en")
                     <span>(${customer.ratings.totalRatings} reviews)</span>
                   </div>
                   <p><strong>Phone:</strong> ${customer.phone}</p>
-                  <p><strong>Address:</strong> ${request.addressId.line}, ${request.addressId.area}, ${request.addressId.city} - ${request.addressId.pincode}</p>
-                  ${request.addressId.landmark ? `<p><strong>Landmark:</strong> ${request.addressId.landmark}</p>` : ''}
+                  <p><strong>Address:</strong> ${request.addressId ? `${request.addressId.line || ''}, ${request.addressId.area || ''}, ${request.addressId.city || ''} - ${request.addressId.pincode || ''}` : 'Address not available'}</p>
+                  ${request.addressId?.landmark ? `<p><strong>Landmark:</strong> ${request.addressId.landmark}</p>` : ''}
                   ${request.timeWindow ? `<p><strong>Preferred Time:</strong> ${request.timeWindow}</p>` : ''}
                   ${request.description ? `<p><strong>Description:</strong> ${request.description}</p>` : ''}
                 </div>
@@ -275,10 +285,10 @@ html(lang="en")
               
               <div class="pickup-actions">
                 <button class="btn btn-primary" onclick="confirmCompletePickup('${pickup._id}')">
-                  <i class="fas fa-check"></i> Mark as Completed
+                  <i class="fas fa-check"></i>&nbsp;&nbsp;Mark as Completed
                 </button>
                 <a href="tel:${customer.phone}" class="btn btn-secondary">
-                  <i class="fas fa-phone"></i> Call Customer
+                  <i class="fas fa-phone"></i>&nbsp;&nbsp;Call Customer
                 </a>
               </div>
             </div>
@@ -320,11 +330,31 @@ html(lang="en")
 
       // Show complete pickup modal
       function showCompleteModal(bidId) {
+        console.log('showCompleteModal called with bidId:', bidId);
+        console.log('pendingPickups:', pendingPickups);
+
         const pickup = pendingPickups.find(p => p._id === bidId);
+        console.log('Found pickup:', pickup);
+
+        if (!pickup) {
+          console.error('Pickup not found with bidId:', bidId);
+          alert('Pickup not found. Please refresh the page.');
+          return;
+        }
+
         currentPickup = pickup;
-        
+
         const modal = document.getElementById('completeModal');
         const summary = document.getElementById('pickupSummary');
+
+        console.log('Complete modal element:', modal);
+        console.log('Summary element:', summary);
+
+        if (!modal) {
+          console.error('completeModal not found!');
+          alert('Complete modal not found. Please refresh the page.');
+          return;
+        }
         
         const request = pickup.pickupRequestId;
         const customer = request.customerId;
@@ -339,11 +369,23 @@ html(lang="en")
         `;
         
         // Pre-fill final amount with estimated amount
-        document.getElementById('finalAmount').value = pickup.totalEstimatedAmount;
-        document.getElementById('actualWeight').value = '';
-        clearErrors();
-        
+        const finalAmountEl = document.getElementById('finalAmount');
+        const actualWeightEl = document.getElementById('actualWeight');
+
+        console.log('finalAmount element:', finalAmountEl);
+        console.log('actualWeight element:', actualWeightEl);
+
+        if (finalAmountEl) finalAmountEl.value = pickup.totalEstimatedAmount;
+        if (actualWeightEl) actualWeightEl.value = '';
+
+        if (typeof clearErrors === 'function') {
+          clearErrors();
+        }
+
+        console.log('Setting complete modal display to flex');
         modal.style.display = 'flex';
+        modal.classList.add('show');
+        console.log('Complete modal should be visible now');
       }
 
       function hideCompleteModal() {
@@ -371,21 +413,65 @@ html(lang="en")
         }
 
         try {
-          RaddiWala.showLoading(submitBtn);
-          
-          await RaddiWala.apiCall(`/bids/${currentPickup._id}/complete`, {
-            method: 'POST',
-            body: JSON.stringify(formData)
-          });
-          
-          RaddiWala.showNotification('Pickup marked as completed successfully!', 'success');
+          console.log('Completing pickup:', currentPickup._id);
+          console.log('Form data:', formData);
+
+          if (typeof RaddiWala !== 'undefined' && RaddiWala.showLoading) {
+            RaddiWala.showLoading(submitBtn);
+          } else {
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Completing...';
+          }
+
+          if (typeof RaddiWala !== 'undefined' && RaddiWala.apiCall) {
+            await RaddiWala.apiCall(`/bids/${currentPickup._id}/complete`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify(formData)
+            });
+          } else {
+            // Fallback to fetch
+            const response = await fetch(`/api/bids/${currentPickup._id}/complete`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              credentials: 'include',
+              body: JSON.stringify(formData)
+            });
+
+            if (!response.ok) {
+              const errorData = await response.json();
+              throw new Error(errorData.message || 'Failed to complete pickup');
+            }
+          }
+
+          if (typeof RaddiWala !== 'undefined' && RaddiWala.showNotification) {
+            RaddiWala.showNotification('Pickup marked as completed successfully!', 'success');
+          } else {
+            alert('Pickup marked as completed successfully!');
+          }
+
           hideCompleteModal();
+          console.log('Reloading pending pickups after completion...');
           loadPendingPickups(); // Reload data
-          
+
         } catch (error) {
-          RaddiWala.showNotification(error.message, 'error');
+          console.error('Error completing pickup:', error);
+          if (typeof RaddiWala !== 'undefined' && RaddiWala.showNotification) {
+            RaddiWala.showNotification(error.message || 'Failed to complete pickup', 'error');
+          } else {
+            alert('Error: ' + (error.message || 'Failed to complete pickup'));
+          }
         } finally {
-          RaddiWala.hideLoading(submitBtn, 'Mark as Completed');
+          if (typeof RaddiWala !== 'undefined' && RaddiWala.hideLoading) {
+            RaddiWala.hideLoading(submitBtn, 'Mark as Completed');
+          } else {
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Mark as Completed';
+          }
         }
       });
 
@@ -411,23 +497,51 @@ html(lang="en")
 
       // Confirmation modal functions
       function showConfirmModal(message, onConfirm) {
-        document.getElementById('confirmMessage').textContent = message;
-        document.getElementById('confirmButton').onclick = () => {
+        console.log('showConfirmModal called with message:', message);
+
+        const modal = document.getElementById('confirmModal');
+        const messageEl = document.getElementById('confirmMessage');
+        const buttonEl = document.getElementById('confirmButton');
+
+        console.log('Modal element:', modal);
+        console.log('Message element:', messageEl);
+        console.log('Button element:', buttonEl);
+
+        if (!modal) {
+          console.error('confirmModal not found!');
+          alert('Modal not found. Please refresh the page.');
+          return;
+        }
+
+        messageEl.textContent = message;
+        buttonEl.onclick = () => {
+          console.log('Confirm button clicked');
           hideConfirmModal();
           onConfirm();
         };
-        document.getElementById('confirmModal').style.display = 'flex';
+
+        console.log('Setting modal display to flex');
+        modal.style.display = 'flex';
+        modal.classList.add('show');
+        console.log('Modal should be visible now');
       }
 
       function hideConfirmModal() {
-        document.getElementById('confirmModal').style.display = 'none';
+        console.log('hideConfirmModal called');
+        const modal = document.getElementById('confirmModal');
+        modal.classList.remove('show');
+        setTimeout(() => {
+          modal.style.display = 'none';
+        }, 300);
       }
 
       // Confirm complete pickup
       function confirmCompletePickup(bidId) {
+        console.log('confirmCompletePickup clicked with bidId:', bidId);
         showConfirmModal(
           'Are you sure you want to mark this pickup as completed? This will open the completion form.',
           () => {
+            console.log('Confirmed, showing complete modal');
             showCompleteModal(bidId);
           }
         );
