@@ -1,6 +1,6 @@
 # RaddiWala
 
-RaddiWala is a full-stack platform that digitizes the traditional scrap-selling process. It connects customers with scrap collectors (Raddiwalas), enabling photo uploads, bidding, scheduling, and a trust-driven rating system.
+RaddiWala is a full-stack (MERN) platform that digitizes the traditional scrap-selling process. It connects customers with scrap collectors (Raddiwalas), enabling photo uploads, bidding, scheduling, and a trust-driven rating system.
 
 ## Features
 
